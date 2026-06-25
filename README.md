@@ -10,9 +10,6 @@ Static GitHub Pages site for practical resource pages and a browser-only pairwis
 |   `-- ibo-bioinformatics-tools/
 |       `-- pairwise-alignment/
 `-- plant-computation-biology/
-    |-- question-1-resources/
-    |-- question-2-resources/
-    `-- question-3-resources/
 ```
 
 The alignment tool lives at:
