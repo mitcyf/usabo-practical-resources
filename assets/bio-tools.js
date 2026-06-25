@@ -173,6 +173,43 @@
     return records;
   }
 
+
+  function parseRenderedAlignmentRecords(input) {
+    const raw = String(input || "").trim();
+    if (!raw) throw new Error("Input is empty.");
+
+    const records = [];
+    const byName = new Map();
+
+    function getRecord(name) {
+      if (!byName.has(name)) {
+        const record = { name, rawSequence: "" };
+        byName.set(name, record);
+        records.push(record);
+      }
+      return byName.get(name);
+    }
+
+    for (const line of raw.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (/^[|.:\s]+$/.test(line)) continue;
+
+      const match = line.match(/^(.+?)(?:\t+|\s{2,})([A-Za-z*.-]+)\s*$/);
+      if (!match) continue;
+
+      const label = match[1].trim();
+      const sequence = match[2].trim();
+      if (!label || !/[A-Za-z*.-]/.test(sequence)) continue;
+      getRecord(label).rawSequence += sequence;
+    }
+
+    if (records.length < 2) {
+      throw new Error("Enter a rendered alignment block with at least two repeated sequence labels and aligned sequence chunks.");
+    }
+    return records;
+  }
+
   function renderSummary(containerId, items) {
     const container = byId(containerId);
     if (!container) return;
@@ -928,11 +965,10 @@
     byId("run-tool").addEventListener("click", () => {
       clearMessage();
       try {
-        const records = parseFastaRecords(valueOf("tree-input"), "Sequence").map((record, index) => ({
+        const records = parseRenderedAlignmentRecords(valueOf("tree-input")).map((record, index) => ({
           name: record.name || "Sequence " + (index + 1),
           sequence: cleanAlignmentSequence(record.rawSequence, record.name || "Sequence " + (index + 1), true)
         }));
-        if (records.length < 2) throw new Error("Enter at least two aligned FASTA sequences.");
         const length = records[0].sequence.length;
         if (records.some((record) => record.sequence.length !== length)) {
           throw new Error("Tree Builder expects an existing alignment: all sequences must have the same length.");

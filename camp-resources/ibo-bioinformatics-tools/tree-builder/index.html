@@ -19,10 +19,10 @@
     <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Bioinformatics Tools</a> / Tree Builder</nav>
 
     <h1>Tree Builder</h1>
-    <p class="subtitle">Build a simple UPGMA phylogenetic tree from an aligned FASTA input.</p>
+    <p class="subtitle">Build a simple UPGMA phylogenetic tree from rendered alignment blocks.</p>
 
     <section class="panel" aria-label="Tree Builder inputs">
-      <label for="tree-input">Aligned FASTA sequences</label>
+      <label for="tree-input">Rendered alignment block</label>
       <textarea id="tree-input" spellcheck="false"></textarea>
 
       <div class="buttons">
@@ -30,7 +30,7 @@
         <button type="button" class="secondary" id="clear-tool">Clear</button>
         <button type="button" class="secondary" id="copy-results">Copy Newick</button>
       </div>
-      <p class="tool-note">Sequences must already be aligned and have equal length.</p>
+      <p class="tool-note">Paste the rendered alignment block format with repeated sequence labels and aligned chunks; consensus rows are ignored.</p>
       <div id="tool-message" class="message" role="status" aria-live="polite"></div>
     </section>
 
