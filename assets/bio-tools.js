@@ -929,26 +929,105 @@
     return "(" + node.children.map((child) => newickSubtree(child) + ":" + Math.max(node.height - child.height, 0).toFixed(4)).join(",") + ")";
   }
 
-  function renderTreeNode(node, parentHeight) {
-    const wrapper = document.createElement("div");
-    const label = document.createElement("div");
-    wrapper.className = "tree-node";
-    label.className = "tree-label";
-    label.appendChild(document.createTextNode(node.children.length ? node.label : node.label));
-    if (parentHeight !== null) {
-      const branch = document.createElement("span");
-      branch.textContent = "branch " + Math.max(parentHeight - node.height, 0).toFixed(4);
-      label.appendChild(branch);
-    }
-    wrapper.appendChild(label);
+  function svgElement(name) {
+    return document.createElementNS("http://www.w3.org/2000/svg", name);
+  }
 
-    if (node.children.length) {
-      const children = document.createElement("div");
-      children.className = "tree-children";
-      for (const child of node.children) children.appendChild(renderTreeNode(child, node.height));
-      wrapper.appendChild(children);
+  function renderTreeDiagram(root) {
+    const leaves = [];
+    function collectLeaves(node) {
+      if (!node.children.length) {
+        leaves.push(node);
+        return;
+      }
+      for (const child of node.children) collectLeaves(child);
     }
-    return wrapper;
+    collectLeaves(root);
+
+    const rowHeight = 46;
+    const top = 34;
+    const bottom = 30;
+    const left = 28;
+    const maxLabelLength = Math.max(...leaves.map((leaf) => String(leaf.label).length));
+    const labelWidth = Math.max(maxLabelLength * 7.2 + 24, 170);
+    const branchWidth = Math.max(260, Math.min(520, 90 + leaves.length * 52));
+    const labelX = left + branchWidth + 24;
+    const width = labelX + labelWidth + 22;
+    const height = top + bottom + Math.max(1, leaves.length - 1) * rowHeight;
+    const maxHeight = Math.max(root.height, 0);
+    const yById = new Map();
+
+    leaves.forEach((leaf, index) => {
+      yById.set(leaf.id, top + index * rowHeight);
+    });
+
+    function nodeY(node) {
+      if (yById.has(node.id)) return yById.get(node.id);
+      const y = node.children.reduce((total, child) => total + nodeY(child), 0) / node.children.length;
+      yById.set(node.id, y);
+      return y;
+    }
+
+    function nodeX(node) {
+      if (maxHeight === 0) return node.children.length ? left : left + branchWidth;
+      return left + ((maxHeight - node.height) / maxHeight) * branchWidth;
+    }
+
+    const svg = svgElement("svg");
+    svg.setAttribute("class", "tree-svg");
+    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "UPGMA tree diagram");
+
+    function drawLine(x1, y1, x2, y2, className) {
+      const line = svgElement("line");
+      line.setAttribute("x1", x1.toFixed(2));
+      line.setAttribute("y1", y1.toFixed(2));
+      line.setAttribute("x2", x2.toFixed(2));
+      line.setAttribute("y2", y2.toFixed(2));
+      line.setAttribute("class", className || "tree-branch");
+      svg.appendChild(line);
+    }
+
+    function drawNode(node) {
+      if (!node.children.length) return;
+      const x = nodeX(node);
+      const childYs = node.children.map((child) => nodeY(child));
+      drawLine(x, Math.min(...childYs), x, Math.max(...childYs), "tree-branch tree-branch-vertical");
+      for (const child of node.children) {
+        drawLine(x, nodeY(child), nodeX(child), nodeY(child), "tree-branch");
+        drawNode(child);
+      }
+    }
+
+    drawNode(root);
+
+    for (const leaf of leaves) {
+      const y = nodeY(leaf);
+      const x = nodeX(leaf);
+      const dot = svgElement("circle");
+      dot.setAttribute("cx", x.toFixed(2));
+      dot.setAttribute("cy", y.toFixed(2));
+      dot.setAttribute("r", "3.5");
+      dot.setAttribute("class", "tree-leaf-dot");
+      svg.appendChild(dot);
+
+      const text = svgElement("text");
+      text.setAttribute("x", labelX);
+      text.setAttribute("y", (y + 4).toFixed(2));
+      text.setAttribute("class", "tree-leaf-label");
+      text.textContent = leaf.label;
+      svg.appendChild(text);
+    }
+
+    const rootDot = svgElement("circle");
+    rootDot.setAttribute("cx", nodeX(root).toFixed(2));
+    rootDot.setAttribute("cy", nodeY(root).toFixed(2));
+    rootDot.setAttribute("r", "4");
+    rootDot.setAttribute("class", "tree-root-dot");
+    svg.appendChild(rootDot);
+
+    return svg;
   }
 
   function initTreeBuilder() {
@@ -984,7 +1063,7 @@
         byId("tree-newick").textContent = newick;
         const diagram = byId("tree-diagram");
         diagram.textContent = "";
-        diagram.appendChild(renderTreeNode(tree, null));
+        diagram.appendChild(renderTreeDiagram(tree));
 
         latest = [
           "Tree Builder results",

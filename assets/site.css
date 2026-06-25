@@ -410,40 +410,45 @@ th {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fbfdff;
-  padding: 16px;
+  padding: 14px;
   overflow-x: auto;
 }
 
-.tree-node {
-  margin: 0 0 0 18px;
-  padding: 6px 0 0 12px;
-  border-left: 2px solid #b7c8d9;
+.tree-svg {
+  display: block;
+  min-width: 680px;
+  width: 100%;
+  height: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.tree-diagram > .tree-node {
-  margin-left: 0;
-  border-left: none;
+.tree-branch {
+  stroke: #486581;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  fill: none;
 }
 
-.tree-label {
-  display: inline-flex;
-  gap: 8px;
-  align-items: baseline;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: white;
-  padding: 6px 10px;
+.tree-branch-vertical {
+  stroke: #829ab1;
+}
+
+.tree-leaf-dot {
+  fill: #0f766e;
+  stroke: white;
+  stroke-width: 1.6;
+}
+
+.tree-root-dot {
+  fill: #1769aa;
+  stroke: white;
+  stroke-width: 1.8;
+}
+
+.tree-leaf-label {
+  fill: var(--ink);
+  font-size: 13px;
   font-weight: 800;
-}
-
-.tree-label span {
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.tree-children {
-  margin-top: 4px;
 }
 
 @media (max-width: 800px) {
