@@ -4,6 +4,7 @@
   const DNA_ALLOWED = /^[ACGTNRYKMSWBDHV.-]+$/i;
   const PROTEIN_ALLOWED = /^[ABCDEFGHIKLMNPQRSTVWXYZ*.-]+$/i;
   const MAX_ALIGNMENT_CELLS = 8000000;
+  const MAX_PERMUTATION_CELLS = 80000000;
 
   const IUPAC = {
     A: "A", C: "C", G: "G", T: "T", U: "T",
@@ -744,6 +745,44 @@
     };
   }
 
+  function shuffleSequence(sequence) {
+    const chars = sequence.split("");
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = chars[i];
+      chars[i] = chars[j];
+      chars[j] = temp;
+    }
+    return chars.join("");
+  }
+
+  function estimateAlignmentPValue(ref, sample, observedScore, settings, permutations) {
+    if (permutations === 0) return null;
+
+    const cellBudget = permutations * (ref.length + 1) * (sample.length + 1);
+    if (cellBudget > MAX_PERMUTATION_CELLS) {
+      throw new Error("P-value shuffling would be too slow for these sequence lengths. Lower the shuffle count or set it to 0.");
+    }
+
+    let atLeastObserved = 0;
+    for (let i = 0; i < permutations; i++) {
+      const shuffled = shuffleSequence(sample);
+      const randomScore = needlemanWunsch(ref, shuffled, settings.matchScore, settings.mismatchScore, settings.gapScore).score;
+      if (randomScore >= observedScore) atLeastObserved++;
+    }
+
+    return {
+      pValue: (atLeastObserved + 1) / (permutations + 1),
+      atLeastObserved,
+      permutations
+    };
+  }
+
+  function formatEmpiricalPValue(result) {
+    if (!result) return "not run";
+    return result.pValue.toFixed(4);
+  }
+
   function initSequenceAlignment() {
     let latest = "";
     setupCopy(() => latest);
@@ -768,24 +807,30 @@
         const mismatchScore = Number(valueOf("align-mismatch"));
         const gapScore = Number(valueOf("align-gap"));
         const wrapWidth = Number(valueOf("align-wrap")) || 60;
-        if (![matchScore, mismatchScore, gapScore, wrapWidth].every(Number.isFinite)) throw new Error("Alignment settings must be valid numbers.");
+        const permutations = Number(valueOf("align-permutations"));
+        if (![matchScore, mismatchScore, gapScore, wrapWidth, permutations].every(Number.isFinite)) throw new Error("Alignment settings must be valid numbers.");
+        if (!Number.isInteger(permutations) || permutations < 0 || permutations > 1000) throw new Error("P-value shuffles must be a whole number from 0 to 1000.");
 
+        const settings = { matchScore, mismatchScore, gapScore };
         const result = buildStarAlignment(records, matchScore, mismatchScore, gapScore);
         const display = formatAlignment(records, result.aligned, wrapWidth);
         const stats = records.map((record, index) => {
-          if (index === 0) return [record.name, "Reference", "-", "-", "-", "-"];
-          const comparison = compareToReference(result.aligned[0], result.aligned[index]);
-          return [record.name, comparison.matches, comparison.mismatches, comparison.insertions, comparison.deletions, comparison.identity.toFixed(2) + "%"];
+          if (index === 0) return [record.name, "Reference", "-", "-", "-", "-", "100.00%", "-"];
+          const pairwise = needlemanWunsch(records[0].sequence, record.sequence, matchScore, mismatchScore, gapScore);
+          const comparison = compareToReference(pairwise.alignedA, pairwise.alignedB);
+          const pValue = estimateAlignmentPValue(records[0].sequence, record.sequence, pairwise.score, settings, permutations);
+          return [record.name, pairwise.score, comparison.matches, comparison.mismatches, comparison.insertions, comparison.deletions, comparison.identity.toFixed(2) + "%", formatEmpiricalPValue(pValue)];
         });
 
         renderSummary("alignment-summary", [
           { label: "Sequences", value: records.length },
           { label: "Reference", value: records[0].name },
           { label: "Aligned length", value: result.aligned[0].length },
-          { label: "Alignment score", value: result.score }
+          { label: "Alignment score", value: result.score },
+          { label: "P-value shuffles", value: permutations }
         ]);
         byId("alignment-output").textContent = display;
-        renderTable("alignment-table", ["Sequence", "Matches", "Mismatches", "Insertions", "Deletions", "Identity vs reference"], stats);
+        renderTable("alignment-table", ["Sequence", "Pairwise score", "Matches", "Mismatches", "Insertions", "Deletions", "% match vs reference", "Empirical p-value"], stats);
 
         latest = [
           "Sequence Alignment results",
@@ -794,7 +839,11 @@
           "Aligned length: " + result.aligned[0].length,
           "Alignment score: " + result.score,
           "",
-          display
+          display,
+          "",
+          "Comparison to reference",
+          "Sequence\tPairwise score\tMatches\tMismatches\tInsertions\tDeletions\t% match\tEmpirical p-value",
+          ...stats.map((row) => row.join("\t"))
         ].join("\n");
 
         showResults();

@@ -30,6 +30,7 @@
         <div><label for="align-mismatch">Mismatch</label><input id="align-mismatch" type="number" value="-1" step="1"></div>
         <div><label for="align-gap">Gap</label><input id="align-gap" type="number" value="-2" step="1"></div>
         <div><label for="align-wrap">Wrap width</label><input id="align-wrap" type="number" value="60" min="20" max="120" step="10"></div>
+        <div><label for="align-permutations">P-value shuffles</label><input id="align-permutations" type="number" value="100" min="0" max="1000" step="50"></div>
       </div>
 
       <div class="buttons">
@@ -37,7 +38,7 @@
         <button type="button" class="secondary" id="clear-tool">Clear</button>
         <button type="button" class="secondary" id="copy-results">Copy results</button>
       </div>
-      <p class="tool-note">For three or more sequences, this tool performs a simple progressive alignment against the first FASTA record.</p>
+      <p class="tool-note">For three or more sequences, this tool performs a simple progressive alignment against the first FASTA record. Empirical p-values are estimated by shuffling each non-reference sequence and realigning it.</p>
       <div id="tool-message" class="message" role="status" aria-live="polite"></div>
     </section>
 
