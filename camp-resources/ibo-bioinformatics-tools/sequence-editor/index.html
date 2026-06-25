@@ -400,7 +400,7 @@
     <div class="tool-grid">
       <section class="panel" aria-label="Sequence Editor input">
         <label for="dna-input">DNA sequence</label>
-        <textarea id="dna-input" spellcheck="false" placeholder=">Example&#10;ATGGCTGCTTTCGATGAACTGTAA"></textarea>
+        <textarea id="dna-input" spellcheck="false"></textarea>
 
         <div class="metric-grid" aria-label="Sequence metrics">
           <div class="metric"><span>Cleaned DNA length</span><strong id="dna-length">0 nt</strong></div>
@@ -409,7 +409,6 @@
         </div>
 
         <div class="buttons">
-          <button type="button" id="load-example">Load example</button>
           <button type="button" class="secondary" id="clear-tool">Clear</button>
           <button type="button" class="secondary" id="copy-protein">Copy protein sequence</button>
           <button type="button" class="secondary" id="copy-dna">Copy cleaned DNA sequence</button>
@@ -436,7 +435,6 @@
     (() => {
       "use strict";
 
-      const EXAMPLE_SEQUENCE = "ATGGCTGCTTTCGATGAACTGTAA";
       const CODONS_PER_LINE = 16;
       const GENETIC_CODE = {
         TTT: "F", TTC: "F", TTA: "L", TTG: "L", TCT: "S", TCC: "S", TCA: "S", TCG: "S",
@@ -459,7 +457,6 @@
         proteinOutput: document.getElementById("protein-output"),
         viewer: document.getElementById("sequence-viewer"),
         summary: document.getElementById("selection-summary"),
-        loadExample: document.getElementById("load-example"),
         clear: document.getElementById("clear-tool"),
         copyProtein: document.getElementById("copy-protein"),
         copyDna: document.getElementById("copy-dna")
@@ -722,10 +719,6 @@
       }
 
       elements.input.addEventListener("input", updateTool);
-      elements.loadExample.addEventListener("click", () => {
-        elements.input.value = ">Example\n" + EXAMPLE_SEQUENCE;
-        updateTool();
-      });
       elements.clear.addEventListener("click", () => {
         elements.input.value = "";
         updateTool();
