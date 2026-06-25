@@ -280,6 +280,17 @@
     return aminoAcids.join("");
   }
 
+  function removeContainedOrfs(orfs) {
+    return orfs.filter((orf, index) => !orfs.some((other, otherIndex) => (
+      otherIndex !== index &&
+      other.strand === orf.strand &&
+      other.frame === orf.frame &&
+      other.start <= orf.start &&
+      other.end >= orf.end &&
+      other.length > orf.length
+    )));
+  }
+
   function findOrfs(sequence, minLength, codeKey) {
     const code = GENETIC_CODES[codeKey] || GENETIC_CODES.standard;
     const scans = [
@@ -325,7 +336,7 @@
       }
     }
 
-    return orfs.sort((a, b) => b.length - a.length || a.start - b.start);
+    return removeContainedOrfs(orfs).sort((a, b) => b.length - a.length || a.start - b.start);
   }
 
   function initOrfFinder() {
