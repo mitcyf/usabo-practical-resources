@@ -8,7 +8,6 @@ Static GitHub Pages site for practical resource pages and browser-only bioinform
 /
 |-- camp-resources/
 |   `-- ibo-bioinformatics-tools/
-|       |-- pairwise-alignment/
 |       |-- orf-finder/
 |       |-- restriction-mapper/
 |       |-- sequence-editor/
