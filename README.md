@@ -1,6 +1,6 @@
-# Pairwise Alignment Tool Site
+# USABO Practical Resources Site
 
-Static GitHub Pages site for practical resource pages and a browser-only pairwise DNA alignment tool.
+Static GitHub Pages site for practical resource pages and browser-only bioinformatics tools.
 
 ## Page Structure
 
@@ -8,14 +8,19 @@ Static GitHub Pages site for practical resource pages and a browser-only pairwis
 /
 |-- camp-resources/
 |   `-- ibo-bioinformatics-tools/
-|       `-- pairwise-alignment/
+|       |-- pairwise-alignment/
+|       |-- orf-finder/
+|       |-- restriction-mapper/
+|       |-- sequence-editor/
+|       |-- sequence-alignment/
+|       `-- tree-builder/
 `-- plant-computation-biology/
 ```
 
-The alignment tool lives at:
+The tools live under:
 
 ```text
-/camp-resources/ibo-bioinformatics-tools/pairwise-alignment/
+/camp-resources/ibo-bioinformatics-tools/
 ```
 
 ## Deploy on GitHub Pages

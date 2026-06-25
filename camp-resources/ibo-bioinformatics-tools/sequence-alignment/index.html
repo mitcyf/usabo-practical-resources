@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sequence Alignment | USABO Practical Resources</title>
+  <link rel="stylesheet" href="../../../assets/site.css">
+</head>
+<body data-tool="sequence-alignment">
+  <main class="site-shell">
+    <header class="site-header">
+      <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="../../../camp-resources/">Camp Resources</a>
+        <a href="../../../plant-computation-biology/">Plant Computation Biology</a>
+      </nav>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Bioinformatics Tools</a> / Sequence Alignment</nav>
+
+    <h1>Sequence Alignment</h1>
+    <p class="subtitle">Align two or more DNA or protein sequences from a FASTA input.</p>
+
+    <section class="panel" aria-label="Sequence Alignment inputs">
+      <label for="alignment-input">FASTA sequences</label>
+      <textarea id="alignment-input" spellcheck="false" placeholder=">Sequence_1&#10;ATGCGT...&#10;>Sequence_2&#10;ATG-GT..."></textarea>
+
+      <div class="settings">
+        <div><label for="align-match">Match</label><input id="align-match" type="number" value="1" step="1"></div>
+        <div><label for="align-mismatch">Mismatch</label><input id="align-mismatch" type="number" value="-1" step="1"></div>
+        <div><label for="align-gap">Gap</label><input id="align-gap" type="number" value="-2" step="1"></div>
+        <div><label for="align-wrap">Wrap width</label><input id="align-wrap" type="number" value="60" min="20" max="120" step="10"></div>
+      </div>
+
+      <div class="buttons">
+        <button type="button" id="run-tool">Align sequences</button>
+        <button type="button" class="secondary" id="clear-tool">Clear</button>
+        <button type="button" class="secondary" id="copy-results">Copy results</button>
+      </div>
+      <p class="tool-note">For three or more sequences, this tool performs a simple progressive alignment against the first FASTA record.</p>
+      <div id="tool-message" class="message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="tool-results" class="panel" style="display: none;" aria-label="Sequence Alignment results">
+      <h2>Alignment</h2>
+      <div id="alignment-summary" class="summary-grid"></div>
+      <div id="alignment-output" class="alignment-block"></div>
+      <h3>Comparison to Reference</h3>
+      <div id="alignment-table"></div>
+    </section>
+
+    <script src="../../../assets/bio-tools.js"></script>
+  </main>
+</body>
+</html>

@@ -201,6 +201,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--border);
@@ -210,7 +211,8 @@ textarea {
   font: inherit;
 }
 
-input {
+input,
+select {
   padding: 10px 12px;
 }
 
@@ -224,6 +226,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(23, 105, 170, 0.16);
@@ -235,6 +238,14 @@ textarea:focus {
   grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 14px;
   margin-top: 18px;
+}
+
+.settings.three {
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+}
+
+.settings.two {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
 }
 
 .buttons {
@@ -337,6 +348,19 @@ button.secondary:hover,
   margin-top: 12px;
 }
 
+.output-block {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -364,6 +388,64 @@ th {
   color: var(--muted);
 }
 
+.tool-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.sequence-viewer {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+.tree-diagram {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.tree-node {
+  margin: 0 0 0 18px;
+  padding: 6px 0 0 12px;
+  border-left: 2px solid #b7c8d9;
+}
+
+.tree-diagram > .tree-node {
+  margin-left: 0;
+  border-left: none;
+}
+
+.tree-label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  padding: 6px 10px;
+  font-weight: 800;
+}
+
+.tree-label span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tree-children {
+  margin-top: 4px;
+}
+
 @media (max-width: 800px) {
   .site-shell {
     width: min(100% - 20px, 1120px);
@@ -380,7 +462,9 @@ th {
   }
 
   .input-grid,
-  .settings {
+  .settings,
+  .settings.three,
+  .settings.two {
     grid-template-columns: 1fr;
   }
 }

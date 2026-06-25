@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sequence Editor | USABO Practical Resources</title>
+  <link rel="stylesheet" href="../../../assets/site.css">
+</head>
+<body data-tool="sequence-editor">
+  <main class="site-shell">
+    <header class="site-header">
+      <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="../../../camp-resources/">Camp Resources</a>
+        <a href="../../../plant-computation-biology/">Plant Computation Biology</a>
+      </nav>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Bioinformatics Tools</a> / Sequence Editor</nav>
+
+    <h1>Sequence Editor</h1>
+    <p class="subtitle">Inspect a DNA sequence and report coordinates for a selected subsequence.</p>
+
+    <section class="panel" aria-label="Sequence Editor inputs">
+      <label for="editor-input">DNA FASTA sequence</label>
+      <textarea id="editor-input" spellcheck="false" placeholder=">Sequence&#10;ATGCGT..."></textarea>
+
+      <div class="settings three">
+        <div>
+          <label for="editor-start">Start position</label>
+          <input id="editor-start" type="number" value="1" min="1" step="1">
+        </div>
+        <div>
+          <label for="editor-end">End position</label>
+          <input id="editor-end" type="number" value="1" min="1" step="1">
+        </div>
+        <div>
+          <label for="editor-line-width">Viewer line width</label>
+          <input id="editor-line-width" type="number" value="60" min="20" max="120" step="10">
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button type="button" id="run-tool">Report selection</button>
+        <button type="button" class="secondary" id="use-highlighted">Use highlighted text</button>
+        <button type="button" class="secondary" id="clear-tool">Clear</button>
+        <button type="button" class="secondary" id="copy-results">Copy results</button>
+      </div>
+      <div id="tool-message" class="message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="tool-results" class="panel" style="display: none;" aria-label="Sequence Editor results">
+      <h2>Selected Region</h2>
+      <div id="editor-summary" class="summary-grid"></div>
+      <h3>Full Sequence View</h3>
+      <div id="editor-viewer" class="sequence-viewer"></div>
+      <h3>Selected Sequence</h3>
+      <div id="editor-selected" class="output-block"></div>
+    </section>
+
+    <script src="../../../assets/bio-tools.js"></script>
+  </main>
+</body>
+</html>

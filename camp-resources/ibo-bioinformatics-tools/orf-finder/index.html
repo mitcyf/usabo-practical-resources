@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORF Finder | USABO Practical Resources</title>
+  <link rel="stylesheet" href="../../../assets/site.css">
+</head>
+<body data-tool="orf-finder">
+  <main class="site-shell">
+    <header class="site-header">
+      <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="../../../camp-resources/">Camp Resources</a>
+        <a href="../../../plant-computation-biology/">Plant Computation Biology</a>
+      </nav>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Bioinformatics Tools</a> / ORF Finder</nav>
+
+    <h1>ORF Finder</h1>
+    <p class="subtitle">Find open reading frames in a DNA FASTA sequence and translate candidate coding regions.</p>
+
+    <section class="panel" aria-label="ORF Finder inputs">
+      <label for="orf-input">DNA FASTA sequence</label>
+      <textarea id="orf-input" spellcheck="false" placeholder=">Sequence&#10;ATGGCC..."></textarea>
+
+      <div class="settings two">
+        <div>
+          <label for="orf-min-length">Minimum ORF length (nt)</label>
+          <input id="orf-min-length" type="number" value="90" min="3" step="3">
+        </div>
+        <div>
+          <label for="orf-code">Genetic code</label>
+          <select id="orf-code">
+            <option value="standard">Standard</option>
+            <option value="bacterial">Bacterial, Archaeal, Plant Plastid</option>
+            <option value="vertebrate-mito">Vertebrate Mitochondrial</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button type="button" id="run-tool">Find ORFs</button>
+        <button type="button" class="secondary" id="clear-tool">Clear</button>
+        <button type="button" class="secondary" id="copy-results">Copy results</button>
+      </div>
+      <p class="tool-note">ORFs are scanned on both strands from recognized start codons to the nearest in-frame stop codon.</p>
+      <div id="tool-message" class="message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="tool-results" class="panel" style="display: none;" aria-label="ORF Finder results">
+      <h2>Candidate ORFs</h2>
+      <div id="orf-summary" class="summary-grid"></div>
+      <div id="orf-table"></div>
+    </section>
+
+    <script src="../../../assets/bio-tools.js"></script>
+  </main>
+</body>
+</html>

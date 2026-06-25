@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restriction Mapper | USABO Practical Resources</title>
+  <link rel="stylesheet" href="../../../assets/site.css">
+</head>
+<body data-tool="restriction-mapper">
+  <main class="site-shell">
+    <header class="site-header">
+      <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="../../../camp-resources/">Camp Resources</a>
+        <a href="../../../plant-computation-biology/">Plant Computation Biology</a>
+      </nav>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Bioinformatics Tools</a> / Restriction Mapper</nav>
+
+    <h1>Restriction Mapper</h1>
+    <p class="subtitle">Paste a DNA sequence to identify common restriction enzymes that cut it.</p>
+
+    <section class="panel" aria-label="Restriction Mapper inputs">
+      <label for="restriction-input">DNA sequence</label>
+      <textarea id="restriction-input" spellcheck="false" placeholder=">Sequence&#10;GAATTCCGGATCC..."></textarea>
+
+      <div class="buttons">
+        <button type="button" id="run-tool">Map restriction sites</button>
+        <button type="button" class="secondary" id="clear-tool">Clear</button>
+        <button type="button" class="secondary" id="copy-results">Copy results</button>
+      </div>
+      <p class="tool-note">Cut coordinates are reported as the position after the cut base, using 1-based sequence coordinates.</p>
+      <div id="tool-message" class="message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="tool-results" class="panel" style="display: none;" aria-label="Restriction Mapper results">
+      <h2>Restriction Sites</h2>
+      <div id="restriction-summary" class="summary-grid"></div>
+      <div id="restriction-table"></div>
+    </section>
+
+    <script src="../../../assets/bio-tools.js"></script>
+  </main>
+</body>
+</html>
