@@ -1,12 +1,12 @@
 # USABO Practical Resources Site
 
-Static GitHub Pages site for practical bioinformatics resources.
+Static GitHub Pages site for practical computational biology resources.
 
 ## Pages
 
 - `/` - Home
 - `/camp-resources/` - Camp resource landing page
-- `/camp-resources/ibo-bioinformatics-tools/` - Bioinformatics toolkit index
+- `/camp-resources/ibo-bioinformatics-tools/` - Practical tools index with Bioinformatics and Machine Learning sections
 - `/camp-resources/ibo-bioinformatics-tools/orf-finder/` - ORF Finder
 - `/camp-resources/ibo-bioinformatics-tools/restriction-mapper/` - Restriction Mapper
 - `/camp-resources/ibo-bioinformatics-tools/sequence-editor/` - Sequence Editor / linked DNA translation viewer
