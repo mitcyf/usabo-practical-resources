@@ -9,8 +9,7 @@ Static GitHub Pages site for practical bioinformatics resources.
 - `/camp-resources/ibo-bioinformatics-tools/` - Bioinformatics toolkit index
 - `/camp-resources/ibo-bioinformatics-tools/orf-finder/` - ORF Finder
 - `/camp-resources/ibo-bioinformatics-tools/restriction-mapper/` - Restriction Mapper
-- `/camp-resources/ibo-bioinformatics-tools/sequence-editor/` - Sequence Editor
-- `/camp-resources/ibo-bioinformatics-tools/dna-translation/` - DNA Translation / linked sequence viewer
+- `/camp-resources/ibo-bioinformatics-tools/sequence-editor/` - Sequence Editor / linked DNA translation viewer
 - `/camp-resources/ibo-bioinformatics-tools/sequence-alignment/` - Sequence Alignment
 - `/camp-resources/ibo-bioinformatics-tools/tree-builder/` - Tree Builder
 - `/plant-computation-biology/` - Coming soon page
