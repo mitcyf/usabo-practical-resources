@@ -773,9 +773,9 @@
         const result = buildStarAlignment(records, matchScore, mismatchScore, gapScore);
         const display = formatAlignment(records, result.aligned, wrapWidth);
         const stats = records.map((record, index) => {
-          if (index === 0) return [record.name, "Reference", "-", "-", "-", "100.00%"];
+          if (index === 0) return [record.name, "100.00%"];
           const comparison = compareToReference(result.aligned[0], result.aligned[index]);
-          return [record.name, comparison.matches, comparison.mismatches, comparison.insertions, comparison.deletions, comparison.identity.toFixed(2) + "%"];
+          return [record.name, comparison.identity.toFixed(2) + "%"];
         });
 
         renderSummary("alignment-summary", [
@@ -785,7 +785,7 @@
           { label: "Alignment score", value: result.score }
         ]);
         byId("alignment-output").textContent = display;
-        renderTable("alignment-table", ["Sequence", "Matches", "Mismatches", "Insertions", "Deletions", "% match vs reference"], stats);
+        renderTable("alignment-table", ["Sequence", "% match vs reference"], stats);
 
         latest = [
           "Sequence Alignment results",
@@ -797,7 +797,7 @@
           display,
           "",
           "Comparison to reference",
-          "Sequence\tMatches\tMismatches\tInsertions\tDeletions\t% match",
+          "Sequence\t% match",
           ...stats.map((row) => row.join("\t"))
         ].join("\n");
 
