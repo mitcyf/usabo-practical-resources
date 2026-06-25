@@ -13,6 +13,6 @@ Static GitHub Pages site for practical computational biology resources.
 - `/camp-resources/ibo-bioinformatics-tools/sequence-alignment/` - Sequence Alignment
 - `/camp-resources/ibo-bioinformatics-tools/tree-builder/` - Tree Builder
 - `/camp-resources/ibo-bioinformatics-tools/dataset-explorer/` - Dataset Explorer placeholder
-- `/camp-resources/ibo-bioinformatics-tools/model-trainer/` - Model Trainer placeholder
-- `/camp-resources/ibo-bioinformatics-tools/threshold-evaluator/` - Threshold Evaluator placeholder
+- `/camp-resources/ibo-bioinformatics-tools/regression-trainer/` - Regression Trainer placeholder
+- `/camp-resources/ibo-bioinformatics-tools/regression-evaluator/` - Regression Evaluator placeholder
 - `/plant-computation-biology/` - Coming soon page
