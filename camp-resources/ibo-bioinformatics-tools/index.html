@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IBO Practical Tools | USABO Practical Resources</title>
+  <title>Bioinformatics Tools | USABO Practical Resources</title>
   <link rel="stylesheet" href="../../assets/site.css">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="prefetch" href="../../assets/vendor/clustalo/clustalo.js" as="script">
   <link rel="prefetch" href="../../assets/vendor/clustalo/clustalo.wasm" as="fetch" type="application/wasm">
+  <link rel="prefetch" href="../../assets/bioinfo-runtime.sharedworker.js" as="worker">
   <link rel="prefetch" href="../../assets/biopython-tools.js" as="script">
   <link rel="prefetch" href="../../assets/py/biotools.py" as="fetch">
 </head>
@@ -18,105 +19,20 @@
       <nav class="top-nav" aria-label="Main navigation">
         <a href="../../camp-resources/">Camp Resources</a>
         <a href="../../plant-computation-biology/">Plant Computation Biology</a>
+        <a href="machine-learning/">Machine Learning Tools</a>
       </nav>
     </header>
 
-    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../">Home</a> / <a href="../">Camp Resources</a> / IBO Practical Tools</nav>
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../">Home</a> / <a href="../">Camp Resources</a> / Bioinformatics Tools</nav>
 
-    <h1>IBO Practical Tools</h1>
-    <p class="subtitle">Browser-based tools for the computational parts of the practical workflow.</p>
+    <h1>Bioinformatics Tools</h1>
+    <p class="subtitle">A single-page practical toolkit for sequence editing, alignment, ORF discovery, restriction mapping, translation, melting temperature, and tree building.</p>
 
-    <section class="panel" aria-label="Bioinformatics tools">
-      <h2>Bioinformatics</h2>
-      <ul class="resource-list">
-        <li>
-          <a class="resource-card" href="notepad/">
-            <strong>Notepad</strong>
-            <span>Use a temporary scratchpad during the practical workflow.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="codon-alignment/">
-            <strong>Codon Alignment</strong>
-            <span>Project a protein CLUSTAL alignment onto matching coding DNA sequences.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="dna-to-protein/">
-            <strong>DNA to Protein</strong>
-            <span>Translate a DNA FASTA sequence with Biopython translation behavior.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="orf-finder/">
-            <strong>ORF Finder</strong>
-            <span>Find candidate open reading frames using Biopython genetic-code tables.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="restriction-mapper/">
-            <strong>Restriction Mapper</strong>
-            <span>Search Biopython's restriction enzyme library for cut sites.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="reverse-complement/">
-            <strong>Reverse Complement</strong>
-            <span>Generate the reverse complement of a DNA sequence.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="sequence-editor/">
-            <strong>Sequence Editor</strong>
-            <span>Edit, translate, and inspect DNA with linked codon and amino acid selection.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="sequence-alignment/">
-            <strong>Sequence Alignment</strong>
-            <span>Align DNA or protein FASTA sequences with Clustal Omega in the browser.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="tm-calculator/">
-            <strong>Tm Calculator</strong>
-            <span>Calculate DNA melting temperature using Biopython nearest-neighbor defaults.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="tree-builder/">
-            <strong>Tree Builder</strong>
-            <span>Build a Biopython neighbor-joining tree from an alignment.</span>
-          </a>
-        </li>
-      </ul>
-    </section>
+    <div id="bioinfo-app"></div>
 
-    <section class="panel" aria-label="Machine learning tools">
-      <h2>Machine Learning</h2>
-      <ul class="resource-list">
-        <li>
-          <a class="resource-card" href="dataset-explorer/">
-            <strong>Dataset Explorer</strong>
-            <span>Practical material coming soon.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="regression-trainer/">
-            <strong>Regression Trainer</strong>
-            <span>Practical material coming soon.</span>
-          </a>
-        </li>
-        <li>
-          <a class="resource-card" href="regression-evaluator/">
-            <strong>Regression Evaluator</strong>
-            <span>Practical material coming soon.</span>
-          </a>
-        </li>
-      </ul>
-    </section>
-
-    <script src="../../assets/biopython-tools.js" data-preload="idle"></script>
+    <script src="../../assets/biopython-tools.js"></script>
+    <script src="../../assets/clustalo-tools.js"></script>
+    <script src="../../assets/bioinfo-app.js"></script>
   </main>
 </body>
 </html>

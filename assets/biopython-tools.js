@@ -482,7 +482,10 @@
     });
   }
 
-  window.USABOBioPythonTools = { preload: ensureRuntime };
+  window.USABOBioPythonTools = {
+    preload: ensureRuntime,
+    runTool: runPythonTool
+  };
   preloadRuntimeWhenIdle();
 
   const tool = document.body.dataset.pyTool;

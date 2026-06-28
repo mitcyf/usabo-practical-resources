@@ -128,6 +128,50 @@
     return order.map((name) => ({ name, sequence: chunks.get(name).join("") }));
   }
 
+  async function align(input, options) {
+    const opts = options || {};
+    const sequenceType = opts.sequenceType || opts.sequence_type || "auto";
+    const outputOrder = opts.outputOrder || opts.output_order || "input-order";
+    const wrap = Math.max(20, Math.min(120, Number(opts.wrap) || 60));
+    const inputRecords = parseFasta(input);
+    const createModule = await loadClustalOmega();
+    const stdout = [];
+    const stderr = [];
+    const module = await createModule({
+      locateFile: (path) => new URL(path, CLUSTALO_WASM_BASE).href,
+      print: (text) => stdout.push(text),
+      printErr: (text) => stderr.push(text)
+    });
+
+    module.FS.writeFile("input.fa", input);
+    const args = [
+      "--infile=input.fa",
+      "--outfmt=clu",
+      "--wrap=" + wrap,
+      "--threads=1",
+      "--output-order=" + outputOrder
+    ];
+
+    if (sequenceType !== "auto") args.push("--seqtype=" + sequenceType);
+
+    const status = module.callMain(args);
+    const output = stdout.join("\n").trim();
+    if (status !== 0 || !output) {
+      throw new Error((stderr.join("\n") || "Clustal Omega did not return an alignment.").trim());
+    }
+
+    const alignedRecords = parseClustal(output);
+    return {
+      inputRecords,
+      alignedRecords,
+      output,
+      alignmentLength: alignedRecords[0] ? alignedRecords[0].sequence.length : 0,
+      sequenceType,
+      outputOrder,
+      wrap
+    };
+  }
+
   function appendCell(row, value, tagName) {
     const cell = document.createElement(tagName || "td");
     cell.textContent = value == null ? "" : String(value);
@@ -196,53 +240,23 @@
     const input = valueOf("alignment-input");
     const sequenceType = valueOf("align-seqtype") || "auto";
     const outputOrder = valueOf("align-output-order") || "input-order";
-    const wrap = Math.max(20, Math.min(120, Number(valueOf("align-wrap")) || 60));
-
-    parseFasta(input);
+    const wrap = Number(valueOf("align-wrap")) || 60;
 
     showMessage("Loading Clustal Omega and aligning sequences.", "ok");
     setDisabled(true);
 
     try {
-      const createModule = await loadClustalOmega();
-      const stdout = [];
-      const stderr = [];
-      const module = await createModule({
-        locateFile: (path) => new URL(path, CLUSTALO_WASM_BASE).href,
-        print: (text) => stdout.push(text),
-        printErr: (text) => stderr.push(text)
-      });
-
-      module.FS.writeFile("input.fa", input);
-      const args = [
-        "--infile=input.fa",
-        "--outfmt=clu",
-        "--wrap=" + wrap,
-        "--threads=1",
-        "--output-order=" + outputOrder
-      ];
-
-      if (sequenceType !== "auto") args.push("--seqtype=" + sequenceType);
-
-      const status = module.callMain(args);
-      const output = stdout.join("\n").trim();
-      if (status !== 0 || !output) {
-        throw new Error((stderr.join("\n") || "Clustal Omega did not return an alignment.").trim());
-      }
-
-      const alignedRecords = parseClustal(output);
-      const alignmentLength = alignedRecords[0] ? alignedRecords[0].sequence.length : 0;
-
-      byId("alignment-output").textContent = output;
+      const result = await align(input, { sequenceType, outputOrder, wrap });
+      byId("alignment-output").textContent = result.output;
       renderSummary([
         { label: "Method", value: "Clustal Omega 1.2.4" },
-        { label: "Sequences", value: alignedRecords.length },
-        { label: "Aligned length", value: alignmentLength },
+        { label: "Sequences", value: result.alignedRecords.length },
+        { label: "Aligned length", value: result.alignmentLength },
         { label: "Sequence type", value: sequenceType === "auto" ? "Auto" : sequenceType }
       ]);
-      renderIdentityTable(alignedRecords);
+      renderIdentityTable(result.alignedRecords);
 
-      latestText = output;
+      latestText = result.output;
       showResults();
       showMessage("Alignment completed with Clustal Omega.", "ok");
     } catch (err) {
@@ -283,10 +297,19 @@
     const runButton = byId("run-tool");
     const clearButton = byId("clear-tool");
     const copyButton = byId("copy-results");
-    if (runButton) runButton.addEventListener("click", runAlignment);
+    const input = byId("alignment-input");
+    if (!input || !runButton) return;
+    runButton.addEventListener("click", runAlignment);
     if (clearButton) clearButton.addEventListener("click", clearTool);
     if (copyButton) copyButton.addEventListener("click", copyResults);
   }
+
+  window.USABOClustalOmega = {
+    preload: loadClustalOmega,
+    align,
+    parseFasta,
+    parseClustal
+  };
 
   init();
 })();

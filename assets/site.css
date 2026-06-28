@@ -473,3 +473,270 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+
+.app-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.tool-sidebar {
+  position: sticky;
+  top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.runtime-strip {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.runtime-strip [data-status="ready"] {
+  color: var(--ok);
+}
+
+.runtime-strip [data-status="loading"] {
+  color: var(--primary-dark);
+}
+
+.tool-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.tool-tab {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-left: 5px solid transparent;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 11px 12px;
+  text-align: left;
+  box-shadow: none;
+}
+
+.tool-tab:hover,
+.tool-tab.active {
+  background: #fbfdff;
+  border-color: #b7c8d9;
+  border-left-color: var(--primary);
+  color: var(--ink);
+}
+
+.tool-tab span {
+  font-weight: 900;
+  color: var(--primary);
+}
+
+.tool-tab small {
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.tool-workspace:focus {
+  outline: none;
+}
+
+.tool-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.tool-heading h2 {
+  margin-bottom: 4px;
+}
+
+.button-link.compact {
+  min-height: 38px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.metric {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px;
+}
+
+.metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.metric strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 1.08rem;
+}
+
+.viewer-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 16px;
+}
+
+.sequence-block {
+  margin-bottom: 18px;
+  min-width: max-content;
+}
+
+.sequence-line {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 10px;
+  align-items: start;
+  margin: 4px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+
+.line-label {
+  color: var(--muted);
+  font-weight: 800;
+  text-align: right;
+  user-select: none;
+}
+
+.slot-track {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.codon-slot,
+.aa-slot {
+  display: inline-flex;
+  width: 3ch;
+  min-width: 3ch;
+  justify-content: center;
+  align-items: center;
+}
+
+.codon-slot {
+  justify-content: flex-start;
+}
+
+.codon-slot.partial {
+  color: #7b8794;
+}
+
+.nt,
+.aa {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.aa {
+  font-weight: 800;
+}
+
+.nt.selected-dna {
+  background: #bfdbfe;
+  color: #0f2747;
+}
+
+.aa.selected-aa {
+  background: #fde68a;
+  color: #513c06;
+}
+
+.aa.stop-aa {
+  color: var(--danger);
+  font-weight: 900;
+}
+
+.aa.ambiguous-aa {
+  color: #6b7280;
+}
+
+.selection-summary {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  padding: 14px;
+  min-height: 90px;
+}
+
+.selection-summary p {
+  margin: 4px 0;
+}
+
+.selection-summary code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.protein-output {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #111827;
+  color: #f9fafb;
+  padding: 12px;
+  font: 0.95rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .app-layout,
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-sidebar {
+    position: static;
+  }
+
+  .tool-nav {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+
+  .tool-heading {
+    display: block;
+  }
+
+  .tool-heading .button-link {
+    margin-top: 10px;
+  }
+}
