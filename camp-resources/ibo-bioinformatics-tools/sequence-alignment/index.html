@@ -6,7 +6,7 @@
   <title>Sequence Alignment | USABO Practical Resources</title>
   <link rel="stylesheet" href="../../../assets/site.css">
 </head>
-<body data-tool="sequence-alignment">
+<body>
   <main class="site-shell">
     <header class="site-header">
       <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
@@ -19,16 +19,29 @@
     <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / Sequence Alignment</nav>
 
     <h1>Sequence Alignment</h1>
-    <p class="subtitle">Align two or more DNA or protein sequences from a FASTA input.</p>
+    <p class="subtitle">Align two or more DNA or protein sequences with Clustal Omega running in the browser.</p>
 
     <section class="panel" aria-label="Sequence Alignment inputs">
       <label for="alignment-input">FASTA sequences</label>
       <textarea id="alignment-input" spellcheck="false"></textarea>
 
       <div class="settings">
-        <div><label for="align-match">Match</label><input id="align-match" type="number" value="1" step="1"></div>
-        <div><label for="align-mismatch">Mismatch</label><input id="align-mismatch" type="number" value="-1" step="1"></div>
-        <div><label for="align-gap">Gap</label><input id="align-gap" type="number" value="-2" step="1"></div>
+        <div>
+          <label for="align-seqtype">Sequence type</label>
+          <select id="align-seqtype">
+            <option value="auto">Auto</option>
+            <option value="DNA">DNA</option>
+            <option value="RNA">RNA</option>
+            <option value="Protein">Protein</option>
+          </select>
+        </div>
+        <div>
+          <label for="align-output-order">Output order</label>
+          <select id="align-output-order">
+            <option value="input-order">Input order</option>
+            <option value="tree-order">Tree order</option>
+          </select>
+        </div>
         <div><label for="align-wrap">Wrap width</label><input id="align-wrap" type="number" value="60" min="20" max="120" step="10"></div>
       </div>
 
@@ -37,7 +50,7 @@
         <button type="button" class="secondary" id="clear-tool">Clear</button>
         <button type="button" class="secondary" id="copy-results">Copy results</button>
       </div>
-      <p class="tool-note">For three or more sequences, this tool performs a simple progressive alignment against the first FASTA record.</p>
+      <p class="tool-note">The first run downloads a small Clustal Omega WebAssembly module; later runs should use the browser cache.</p>
       <div id="tool-message" class="message" role="status" aria-live="polite"></div>
     </section>
 
@@ -49,7 +62,7 @@
       <div id="alignment-table"></div>
     </section>
 
-    <script src="../../../assets/bio-tools.js"></script>
+    <script src="../../../assets/clustalo-tools.js"></script>
   </main>
 </body>
 </html>

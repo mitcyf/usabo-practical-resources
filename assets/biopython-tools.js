@@ -194,6 +194,18 @@
     clearOutputs();
   }
 
+  function preloadRuntimeWhenIdle() {
+    if (!CURRENT_SCRIPT || CURRENT_SCRIPT.dataset.preload !== "idle") return;
+    const preload = () => ensureRuntime().catch(() => {
+      runtimePromise = null;
+    });
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(preload, { timeout: 5000 });
+    } else {
+      window.setTimeout(preload, 1500);
+    }
+  }
+
   function formatNumber(value, digits) {
     return Number(value).toFixed(digits == null ? 2 : digits);
   }
@@ -469,6 +481,9 @@
       event.returnValue = "Changes may not be saved";
     });
   }
+
+  window.USABOBioPythonTools = { preload: ensureRuntime };
+  preloadRuntimeWhenIdle();
 
   const tool = document.body.dataset.pyTool;
   const runners = {

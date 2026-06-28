@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IBO Practical Tools | USABO Practical Resources</title>
   <link rel="stylesheet" href="../../assets/site.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="prefetch" href="../../assets/vendor/clustalo/clustalo.js" as="script">
+  <link rel="prefetch" href="../../assets/vendor/clustalo/clustalo.wasm" as="fetch" type="application/wasm">
+  <link rel="prefetch" href="../../assets/biopython-tools.js" as="script">
+  <link rel="prefetch" href="../../assets/py/biotools.py" as="fetch">
 </head>
 <body>
   <main class="site-shell">
@@ -69,7 +74,7 @@
         <li>
           <a class="resource-card" href="sequence-alignment/">
             <strong>Sequence Alignment</strong>
-            <span>Align two or more FASTA sequences in the browser while Clustal Omega options are evaluated.</span>
+            <span>Align DNA or protein FASTA sequences with Clustal Omega in the browser.</span>
           </a>
         </li>
         <li>
@@ -111,6 +116,7 @@
       </ul>
     </section>
 
+    <script src="../../assets/biopython-tools.js" data-preload="idle"></script>
   </main>
 </body>
 </html>
