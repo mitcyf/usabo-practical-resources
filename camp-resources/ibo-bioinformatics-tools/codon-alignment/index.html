@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codon Alignment | USABO Practical Resources</title>
+  <link rel="stylesheet" href="../../../assets/site.css">
+</head>
+<body data-py-tool="codon-alignment">
+  <main class="site-shell">
+    <header class="site-header">
+      <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="../../../camp-resources/">Camp Resources</a>
+        <a href="../../../plant-computation-biology/">Plant Computation Biology</a>
+      </nav>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / Codon Alignment</nav>
+
+    <h1>Codon Alignment</h1>
+    <p class="subtitle">Project a protein CLUSTAL alignment back onto matching nucleotide coding sequences.</p>
+    <section class="panel" aria-label="Codon Alignment inputs">
+      <div class="input-grid">
+        <div>
+          <label for="protein-alignment">Protein alignment (CLUSTAL)</label>
+          <textarea id="protein-alignment" spellcheck="false"></textarea>
+        </div>
+        <div>
+          <label for="nucleotide-sequences">Nucleotide coding sequences (FASTA)</label>
+          <textarea id="nucleotide-sequences" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div class="buttons">
+        <button type="button" id="run-tool">Align codons</button>
+        <button type="button" class="secondary" id="clear-tool">Clear</button>
+        <button type="button" class="secondary" id="copy-results">Copy results</button>
+      </div>
+
+      <p class="tool-note">Sequence IDs in the CLUSTAL protein alignment must match IDs in the nucleotide FASTA input.</p>
+<div id="tool-message" class="message" role="status" aria-live="polite"></div>
+    </section>
+    <section id="tool-results" class="panel" style="display: none;" aria-label="Codon Alignment results">
+      <h2>Results</h2>
+      <div id="summary" class="summary-grid"></div>
+      <div id="output" class="output-block"></div>
+      <div id="result-table"></div>
+    </section>
+
+
+    <script src="../../../assets/biopython-tools.js"></script>
+  </main>
+</body>
+</html>

@@ -6,7 +6,7 @@
   <title>Tree Builder | USABO Practical Resources</title>
   <link rel="stylesheet" href="../../../assets/site.css">
 </head>
-<body data-tool="tree-builder">
+<body data-py-tool="tree-builder">
   <main class="site-shell">
     <header class="site-header">
       <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
@@ -19,31 +19,29 @@
     <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / Tree Builder</nav>
 
     <h1>Tree Builder</h1>
-    <p class="subtitle">Build a simple UPGMA phylogenetic tree from rendered alignment blocks.</p>
-
+    <p class="subtitle">Build a neighbor-joining phylogenetic tree from a CLUSTAL or rendered alignment using Biopython.</p>
     <section class="panel" aria-label="Tree Builder inputs">
-      <label for="tree-input">Rendered alignment block</label>
-      <textarea id="tree-input" spellcheck="false"></textarea>
-
+      <label for="alignment-input">Alignment</label>
+      <textarea id="alignment-input" spellcheck="false"></textarea>
       <div class="buttons">
         <button type="button" id="run-tool">Build tree</button>
         <button type="button" class="secondary" id="clear-tool">Clear</button>
-        <button type="button" class="secondary" id="copy-results">Copy Newick</button>
+        <button type="button" class="secondary" id="copy-results">Copy results</button>
       </div>
-      <p class="tool-note">Paste the rendered alignment block format with repeated sequence labels and aligned chunks; consensus rows are ignored.</p>
-      <div id="tool-message" class="message" role="status" aria-live="polite"></div>
-    </section>
 
+      <p class="tool-note">Accepts CLUSTAL alignment text or the rendered alignment block format used in the practical tools.</p>
+<div id="tool-message" class="message" role="status" aria-live="polite"></div>
+    </section>
     <section id="tool-results" class="panel" style="display: none;" aria-label="Tree Builder results">
       <h2>Tree</h2>
-      <div id="tree-summary" class="summary-grid"></div>
+      <div id="summary" class="summary-grid"></div>
       <h3>Newick</h3>
       <div id="tree-newick" class="output-block"></div>
       <h3>Visual Diagram</h3>
       <div id="tree-diagram" class="tree-diagram"></div>
     </section>
 
-    <script src="../../../assets/bio-tools.js"></script>
+    <script src="../../../assets/biopython-tools.js"></script>
   </main>
 </body>
 </html>

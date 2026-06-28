@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ORF Finder | USABO Practical Resources</title>
+  <title>DNA to Protein | USABO Practical Resources</title>
   <link rel="stylesheet" href="../../../assets/site.css">
 </head>
-<body data-py-tool="orf-finder">
+<body data-py-tool="dna-to-protein">
   <main class="site-shell">
     <header class="site-header">
       <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
@@ -16,18 +16,14 @@
       </nav>
     </header>
 
-    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / ORF Finder</nav>
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / DNA to Protein</nav>
 
-    <h1>ORF Finder</h1>
-    <p class="subtitle">Find open reading frames in a DNA FASTA sequence using Biopython translation tables.</p>
-    <section class="panel" aria-label="ORF Finder inputs">
-      <label for="sequence-input">DNA FASTA sequence</label>
+    <h1>DNA to Protein</h1>
+    <p class="subtitle">Translate a DNA FASTA sequence using Biopython Seq.translate, beginning at the first ATG when present.</p>
+    <section class="panel" aria-label="DNA to Protein inputs">
+      <label for="sequence-input">DNA sequence or FASTA</label>
       <textarea id="sequence-input" spellcheck="false"></textarea>
-      <div class="settings three">
-        <div>
-          <label for="min-orf-length">Minimum ORF length (aa)</label>
-          <input id="min-orf-length" type="number" value="30" min="1" step="1">
-        </div>
+      <div class="settings two">
         <div>
           <label for="genetic-code">Genetic code</label>
           <select id="genetic-code">
@@ -37,31 +33,23 @@
             <option value="5">5 - The Invertebrate Mitochondrial Code</option>
           </select>
         </div>
-        <div>
-          <label for="strand-mode">Strands</label>
-          <select id="strand-mode">
-            <option value="forward">Forward only</option>
-            <option value="both">Forward and reverse complement</option>
-          </select>
-        </div>
-      </div>
-      <div class="status-row">
-        <label><input id="hide-contained" type="checkbox" checked style="width: auto; margin-right: 6px;"> Hide ORFs contained within longer ORFs in the same frame</label>
       </div>
       <div class="buttons">
-        <button type="button" id="run-tool">Find ORFs</button>
+        <button type="button" id="run-tool">Translate</button>
         <button type="button" class="secondary" id="clear-tool">Clear</button>
         <button type="button" class="secondary" id="copy-results">Copy results</button>
       </div>
 
-      <p class="tool-note">Forward-only scanning matches the reference app. The contained-ORF filter is retained for the course version.</p>
+      <p class="tool-note">This mirrors the reference behavior: if an ATG is present, translation starts at that ATG and stops at the first stop codon.</p>
 <div id="tool-message" class="message" role="status" aria-live="polite"></div>
     </section>
-    <section id="tool-results" class="panel" style="display: none;" aria-label="ORF Finder results">
-      <h2>Candidate ORFs</h2>
+    <section id="tool-results" class="panel" style="display: none;" aria-label="DNA to Protein results">
+      <h2>Results</h2>
       <div id="summary" class="summary-grid"></div>
+      <div id="output" class="output-block"></div>
       <div id="result-table"></div>
     </section>
+
 
     <script src="../../../assets/biopython-tools.js"></script>
   </main>

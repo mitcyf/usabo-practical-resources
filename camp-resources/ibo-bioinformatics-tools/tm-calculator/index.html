@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Restriction Mapper | USABO Practical Resources</title>
+  <title>Tm Calculator | USABO Practical Resources</title>
   <link rel="stylesheet" href="../../../assets/site.css">
 </head>
-<body data-py-tool="restriction-mapper">
+<body data-py-tool="tm-calculator">
   <main class="site-shell">
     <header class="site-header">
       <p class="site-title"><a href="../../../">USABO Practical Resources</a></p>
@@ -16,30 +16,29 @@
       </nav>
     </header>
 
-    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / Restriction Mapper</nav>
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / Tm Calculator</nav>
 
-    <h1>Restriction Mapper</h1>
-    <p class="subtitle">Identify restriction enzymes from Biopython Bio.Restriction.AllEnzymes that cut a DNA sequence.</p>
-    <section class="panel" aria-label="Restriction Mapper inputs">
+    <h1>Tm Calculator</h1>
+    <p class="subtitle">Calculate DNA melting temperature with Biopython Bio.SeqUtils.MeltingTemp.Tm_NN.</p>
+    <section class="panel" aria-label="Tm Calculator inputs">
       <label for="sequence-input">DNA sequence or FASTA</label>
       <textarea id="sequence-input" spellcheck="false"></textarea>
-      <div class="status-row">
-        <label><input id="include-zero" type="checkbox" style="width: auto; margin-right: 6px;"> Include enzymes with zero cut sites</label>
-      </div>
       <div class="buttons">
-        <button type="button" id="run-tool">Map restriction sites</button>
+        <button type="button" id="run-tool">Calculate Tm</button>
         <button type="button" class="secondary" id="clear-tool">Clear</button>
         <button type="button" class="secondary" id="copy-results">Copy results</button>
       </div>
 
-      <p class="tool-note">Positions are the cut positions returned by Biopython's restriction analysis.</p>
+      <p class="tool-note">Uses Biopython nearest-neighbor defaults for DNA/DNA hybridization.</p>
 <div id="tool-message" class="message" role="status" aria-live="polite"></div>
     </section>
-    <section id="tool-results" class="panel" style="display: none;" aria-label="Restriction Mapper results">
-      <h2>Restriction Sites</h2>
+    <section id="tool-results" class="panel" style="display: none;" aria-label="Tm Calculator results">
+      <h2>Results</h2>
       <div id="summary" class="summary-grid"></div>
+      <div id="output" class="output-block"></div>
       <div id="result-table"></div>
     </section>
+
 
     <script src="../../../assets/biopython-tools.js"></script>
   </main>
