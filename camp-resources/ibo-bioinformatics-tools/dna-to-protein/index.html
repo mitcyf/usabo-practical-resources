@@ -19,7 +19,6 @@
     <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../">Home</a> / <a href="../../">Camp Resources</a> / <a href="../">IBO Practical Tools</a> / DNA to Protein</nav>
 
     <h1>DNA to Protein</h1>
-    <p class="subtitle">Translate a DNA FASTA sequence using Biopython Seq.translate, beginning at the first ATG when present.</p>
     <section class="panel" aria-label="DNA to Protein inputs">
       <label for="sequence-input">DNA sequence or FASTA</label>
       <textarea id="sequence-input" spellcheck="false"></textarea>
@@ -39,8 +38,6 @@
         <button type="button" class="secondary" id="clear-tool">Clear</button>
         <button type="button" class="secondary" id="copy-results">Copy results</button>
       </div>
-
-      <p class="tool-note">This mirrors the reference behavior: if an ATG is present, translation starts at that ATG and stops at the first stop codon.</p>
 <div id="tool-message" class="message" role="status" aria-live="polite"></div>
     </section>
     <section id="tool-results" class="panel" style="display: none;" aria-label="DNA to Protein results">
@@ -49,7 +46,6 @@
       <div id="output" class="output-block"></div>
       <div id="result-table"></div>
     </section>
-
 
     <script src="../../../assets/biopython-tools.js"></script>
   </main>

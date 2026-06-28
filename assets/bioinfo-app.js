@@ -7,16 +7,16 @@
   const DEFAULT_TOOL = "sequence-alignment";
 
   const TOOLS = [
-    { id: "notepad", title: "Notepad", summary: "Scratchpad for temporary notes." },
-    { id: "codon-alignment", title: "Codon Alignment", summary: "Project a protein CLUSTAL alignment onto coding DNA." },
-    { id: "dna-to-protein", title: "DNA to Protein", summary: "Translate DNA with Biopython behavior." },
-    { id: "orf-finder", title: "ORF Finder", summary: "Find candidate open reading frames." },
-    { id: "restriction-mapper", title: "Restriction Mapper", summary: "Identify restriction enzyme cut sites." },
-    { id: "reverse-complement", title: "Reverse Complement", summary: "Generate the reverse complement." },
-    { id: "sequence-editor", title: "Sequence Editor", summary: "Edit, translate, and inspect linked DNA/protein selections." },
-    { id: "sequence-alignment", title: "Sequence Alignment", summary: "Align sequences with Clustal Omega." },
-    { id: "tm-calculator", title: "Tm Calculator", summary: "Calculate DNA melting temperature." },
-    { id: "tree-builder", title: "Tree Builder", summary: "Build a neighbor-joining tree from the practical alignment format." }
+    { id: "notepad", title: "Notepad" },
+    { id: "codon-alignment", title: "Codon Alignment" },
+    { id: "dna-to-protein", title: "DNA to Protein" },
+    { id: "orf-finder", title: "ORF Finder" },
+    { id: "restriction-mapper", title: "Restriction Mapper" },
+    { id: "reverse-complement", title: "Reverse Complement" },
+    { id: "sequence-editor", title: "Sequence Editor" },
+    { id: "sequence-alignment", title: "Sequence Alignment" },
+    { id: "tm-calculator", title: "Tm Calculator" },
+    { id: "tree-builder", title: "Tree Builder" }
   ];
 
   const TOOL_MAP = new Map(TOOLS.map((tool) => [tool.id, tool]));
@@ -175,7 +175,7 @@
         if (message.type === "status") {
           if (message.status === "ready") showRuntimeStatus(message.message || "Bioinformatics runtimes ready.", "ready");
           else if (message.status && message.status.endsWith("ready")) showRuntimeStatus(message.message || "Runtime ready.", "loading");
-          else if (message.status === "connected") showRuntimeStatus("Shared runtime connected. Warming tools in the background.", "loading");
+          else if (message.status === "connected") showRuntimeStatus("Loading", "loading");
           return;
         }
         const pending = state.pending.get(message.id);
@@ -225,11 +225,11 @@
 
   async function preloadRuntimes() {
     registerServiceWorker();
-    showRuntimeStatus("Warming Biopython and Clustal Omega in the background.", "loading");
+    showRuntimeStatus("Loading", "loading");
     try {
       if (connectWorker()) {
         await workerRequest("preload", {});
-        showRuntimeStatus("Bioinformatics runtimes ready.", "ready");
+        showRuntimeStatus("Ready", "ready");
         return;
       }
       throw new Error("SharedWorker is unavailable.");
@@ -240,9 +240,9 @@
           window.USABOBioPythonTools && window.USABOBioPythonTools.preload ? window.USABOBioPythonTools.preload() : Promise.resolve(),
           window.USABOClustalOmega && window.USABOClustalOmega.preload ? window.USABOClustalOmega.preload() : Promise.resolve()
         ]);
-        showRuntimeStatus("Page-local runtimes warmed. Keep this tab open for instant tool switching.", "ready");
+        showRuntimeStatus("Ready", "ready");
       } catch (fallbackErr) {
-        showRuntimeStatus("Runtimes will load on first use.", "idle");
+        showRuntimeStatus("Idle", "idle");
       }
     }
   }
@@ -279,15 +279,9 @@
     state.formState.set(state.activeTool, formSnapshot(panel));
   }
 
-  function toolShell(title, subtitle, inputHtml, resultsHtml) {
+  function toolShell(title, inputHtml, resultsHtml) {
     return html`
-      <div class="tool-heading">
-        <div>
-          <h2>${title}</h2>
-          <p class="tool-note">${subtitle}</p>
-        </div>
-        <a class="button-link secondary compact" href="${state.activeTool}/">Open standalone page</a>
-      </div>
+      <h2>${title}</h2>
       ${inputHtml}
       ${resultsHtml || ""}
     `;
@@ -319,13 +313,11 @@
   const templates = {
     "notepad": () => toolShell(
       "Notepad",
-      "A temporary scratchpad for practical notes. This page does not save data.",
       html`<section class="panel"><textarea data-field="text" spellcheck="false" style="min-height:560px;"></textarea></section>`,
       ""
     ),
     "codon-alignment": () => toolShell(
       "Codon Alignment",
-      "Sequence IDs in the CLUSTAL protein alignment must match IDs in the nucleotide FASTA input.",
       html`<section class="panel">
         <div class="input-grid">
           <div><label>Protein alignment (CLUSTAL)</label><textarea data-field="proteinAlignment" spellcheck="false"></textarea></div>
@@ -338,7 +330,6 @@
     ),
     "dna-to-protein": () => toolShell(
       "DNA to Protein",
-      "Translate a DNA FASTA sequence using Biopython Seq.translate, beginning at the first ATG when present.",
       html`<section class="panel">
         <label>DNA sequence or FASTA</label>
         <textarea data-field="sequence" spellcheck="false"></textarea>
@@ -350,7 +341,6 @@
     ),
     "orf-finder": () => toolShell(
       "ORF Finder",
-      "Find open reading frames in a DNA FASTA sequence using Biopython translation tables.",
       html`<section class="panel">
         <label>DNA FASTA sequence</label>
         <textarea data-field="sequence" spellcheck="false"></textarea>
@@ -367,7 +357,6 @@
     ),
     "restriction-mapper": () => toolShell(
       "Restriction Mapper",
-      "Identify restriction enzymes from Biopython Bio.Restriction.AllEnzymes that cut a DNA sequence.",
       html`<section class="panel">
         <label>DNA sequence or FASTA</label>
         <textarea data-field="sequence" spellcheck="false"></textarea>
@@ -379,13 +368,11 @@
     ),
     "reverse-complement": () => toolShell(
       "Reverse Complement",
-      "Generate the reverse complement of a DNA sequence with Biopython Seq.reverse_complement.",
       html`<section class="panel"><label>DNA sequence or FASTA</label><textarea data-field="sequence" spellcheck="false"></textarea>${standardButtons("Generate reverse complement")}${messageBlock()}</section>`,
       resultsPanel("Results", '<div data-role="summary" class="summary-grid"></div><div data-role="output" class="output-block"></div><div data-role="table"></div>')
     ),
     "sequence-editor": () => toolShell(
       "Sequence Editor",
-      "Edit, inspect, and translate a DNA sequence from nucleotide 1 in reading frame +1, with linked DNA and protein selection.",
       html`<div class="tool-grid">
         <section class="panel">
           <label>DNA sequence</label>
@@ -400,7 +387,6 @@
             <button type="button" class="secondary" data-action="copy-protein">Copy protein sequence</button>
             <button type="button" class="secondary" data-action="copy-dna">Copy cleaned DNA sequence</button>
           </div>
-          <p data-role="trailing-note" class="tool-note"></p>
           ${messageBlock()}
           <h3>Protein sequence</h3>
           <div data-role="protein-output" class="protein-output"></div>
@@ -416,7 +402,6 @@
     ),
     "sequence-alignment": () => toolShell(
       "Sequence Alignment",
-      "Align two or more DNA or protein sequences with Clustal Omega running in the browser.",
       html`<section class="panel">
         <label>FASTA sequences</label>
         <textarea data-field="input" spellcheck="false"></textarea>
@@ -432,13 +417,11 @@
     ),
     "tm-calculator": () => toolShell(
       "Tm Calculator",
-      "Calculate DNA melting temperature with Biopython Bio.SeqUtils.MeltingTemp.Tm_NN.",
       html`<section class="panel"><label>DNA sequence or FASTA</label><textarea data-field="sequence" spellcheck="false"></textarea>${standardButtons("Calculate Tm")}${messageBlock()}</section>`,
       resultsPanel("Results", '<div data-role="summary" class="summary-grid"></div><div data-role="output" class="output-block"></div><div data-role="table"></div>')
     ),
     "tree-builder": () => toolShell(
       "Tree Builder",
-      "Build a neighbor-joining phylogenetic tree from the rendered alignment format used in the practical tools.",
       html`<section class="panel"><label>Rendered alignment</label><textarea data-field="alignment" spellcheck="false"></textarea>${standardButtons("Build tree")}${messageBlock()}</section>`,
       resultsPanel("Tree", '<div data-role="summary" class="summary-grid"></div><h3>Newick</h3><div data-role="tree-newick" class="output-block"></div><h3>Visual Diagram</h3><div data-role="tree-diagram" class="tree-diagram"></div>')
     )
@@ -797,7 +780,6 @@
       dnaLength: role(panel, "dna-length"),
       codonCount: role(panel, "codon-count"),
       trailingCount: role(panel, "trailing-count"),
-      trailingNote: role(panel, "trailing-note"),
       message: role(panel, "message"),
       proteinOutput: role(panel, "protein-output"),
       viewer: role(panel, "sequence-viewer"),
@@ -839,9 +821,7 @@
       elements.viewer.textContent = "";
       if (!editorState.dna) {
         const empty = document.createElement("p");
-        empty.className = "tool-note";
-        empty.textContent = "Paste a DNA sequence to begin.";
-        elements.viewer.appendChild(empty);
+        return;
         return;
       }
       const totalSlots = editorState.protein.length + (editorState.trailing > 0 ? 1 : 0);
@@ -986,7 +966,6 @@
       elements.codonCount.textContent = String(editorState.protein.length);
       elements.trailingCount.textContent = String(editorState.trailing);
       elements.proteinOutput.textContent = editorState.protein;
-      elements.trailingNote.textContent = editorState.trailing > 0 ? "Final " + editorState.trailing + " nucleotide" + (editorState.trailing === 1 ? " was" : "s were") + " not translated because " + (editorState.trailing === 1 ? "it does" : "they do") + " not form a complete codon." : "";
       renderViewer();
       updateHighlights();
     }
@@ -1095,7 +1074,7 @@
     app.innerHTML = html`
       <div class="app-layout">
         <aside class="tool-sidebar" aria-label="Bioinformatics tools">
-          <div class="runtime-strip"><span data-runtime-status data-status="idle">Preparing runtime cache.</span></div>
+          <div class="runtime-strip"><span data-runtime-status data-status="idle">Runtime</span></div>
           <div class="tool-nav" data-role="tool-nav"></div>
         </aside>
         <section class="tool-workspace" data-role="tool-panel" tabindex="-1"></section>
@@ -1108,10 +1087,8 @@
       button.className = "tool-tab";
       button.dataset.toolLink = tool.id;
       const title = document.createElement("span");
-      const summary = document.createElement("small");
       title.textContent = tool.title;
-      summary.textContent = tool.summary;
-      button.append(title, summary);
+      button.append(title);
       button.addEventListener("click", () => renderTool(tool.id));
       nav.appendChild(button);
     });

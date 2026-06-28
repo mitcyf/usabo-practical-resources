@@ -26,14 +26,14 @@ function broadcast(message) {
 async function ensurePyodide() {
   if (!pyodidePromise) {
     pyodidePromise = (async () => {
-      broadcast({ type: "status", status: "python-loading", message: "Loading browser Python and Biopython." });
+      broadcast({ type: "status", status: "python-loading", message: "Loading" });
       if (!self.loadPyodide) importScripts(PYODIDE_SCRIPT);
       const pyodide = await self.loadPyodide({ indexURL: PYODIDE_INDEX });
       await pyodide.loadPackage("biopython");
       const codeResponse = await fetch(PY_MODULE_URL);
       if (!codeResponse.ok) throw new Error("Could not load the local Biopython tool module.");
       await pyodide.runPythonAsync(await codeResponse.text());
-      broadcast({ type: "status", status: "python-ready", message: "Biopython ready." });
+      broadcast({ type: "status", status: "python-ready", message: "Ready" });
       return pyodide;
     })().catch((err) => {
       pyodidePromise = null;
@@ -46,12 +46,12 @@ async function ensurePyodide() {
 async function loadClustalFactory() {
   if (!clustalFactoryPromise) {
     clustalFactoryPromise = (async () => {
-      broadcast({ type: "status", status: "clustal-loading", message: "Loading Clustal Omega." });
+      broadcast({ type: "status", status: "clustal-loading", message: "Loading" });
       if (!self.createClustalOmegaModule) importScripts(CLUSTALO_SCRIPT);
       if (!self.createClustalOmegaModule) {
         throw new Error("The Clustal Omega runtime loaded, but did not expose its module factory.");
       }
-      broadcast({ type: "status", status: "clustal-ready", message: "Clustal Omega ready." });
+      broadcast({ type: "status", status: "clustal-ready", message: "Ready" });
       return self.createClustalOmegaModule;
     })().catch((err) => {
       clustalFactoryPromise = null;
@@ -68,7 +68,7 @@ async function preload() {
       if (failures.length) {
         throw new Error(failures.map((failure) => failure.reason && failure.reason.message ? failure.reason.message : String(failure.reason)).join("; "));
       }
-      broadcast({ type: "status", status: "ready", message: "Bioinformatics runtimes ready." });
+      broadcast({ type: "status", status: "ready", message: "Ready" });
       return { ready: true };
     }).catch((err) => {
       preloadPromise = null;
@@ -200,5 +200,5 @@ self.onconnect = (event) => {
     }
   };
   port.start();
-  port.postMessage({ type: "status", status: "connected", message: "Shared runtime connected." });
+  port.postMessage({ type: "status", status: "connected", message: "Connected" });
 };
