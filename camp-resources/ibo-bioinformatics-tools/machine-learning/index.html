@@ -21,13 +21,16 @@
 
     <h1>Machine Learning Tools</h1>
 
-    <section class="panel" aria-label="Machine learning tools">
-      <ul class="resource-list">
-        <li><a class="resource-card" href="../dataset-explorer/"><strong>Dataset Explorer</strong></a></li>
-        <li><a class="resource-card" href="../regression-trainer/"><strong>Regression Trainer</strong></a></li>
-        <li><a class="resource-card" href="../regression-evaluator/"><strong>Regression Evaluator</strong></a></li>
-      </ul>
-    </section>
+    <div class="app-layout">
+      <aside class="tool-sidebar" aria-label="Machine learning tools">
+        <div class="tool-nav">
+          <button type="button" class="tool-tab active"><span>Dataset Explorer</span></button>
+          <button type="button" class="tool-tab"><span>Regression Trainer</span></button>
+          <button type="button" class="tool-tab"><span>Regression Evaluator</span></button>
+        </div>
+      </aside>
+      <section class="tool-workspace panel blank-workspace" aria-label="Machine learning workspace"></section>
+    </div>
   </main>
 </body>
 </html>

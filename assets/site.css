@@ -740,3 +740,7 @@ th {
     margin-top: 10px;
   }
 }
+
+.blank-workspace {
+  min-height: 560px;
+}
