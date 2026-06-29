@@ -494,6 +494,12 @@
         <section class="panel">
           <label>DNA sequence</label>
           <textarea data-field="dna" spellcheck="false"></textarea>
+          <div class="settings three">
+            <div><label>Start</label><input data-field="selectionStart" type="number" value="1" min="1" step="1"></div>
+            <div><label>End</label><input data-field="selectionEnd" type="number" value="1" min="1" step="1"></div>
+            <div><label>Region</label><button type="button" class="secondary" data-action="apply-selection">Apply selection</button></div>
+            <input data-field="selectionActive" type="hidden" value="">
+          </div>
           <div class="metric-grid">
             <div class="metric"><span>Cleaned DNA length</span><strong data-role="dna-length">0 nt</strong></div>
             <div class="metric"><span>Complete codons</span><strong data-role="codon-count">0</strong></div>
@@ -501,6 +507,7 @@
           </div>
           <div class="buttons">
             <button type="button" class="secondary" data-action="clear-editor">Clear</button>
+            <button type="button" class="secondary" data-action="copy-selection">Copy selected DNA sequence</button>
             <button type="button" class="secondary" data-action="copy-protein">Copy protein sequence</button>
             <button type="button" class="secondary" data-action="copy-dna">Copy cleaned DNA sequence</button>
           </div>
@@ -897,6 +904,9 @@
     const CODONS_PER_LINE = 16;
     const elements = {
       input: field(panel, "dna"),
+      selectionStartInput: field(panel, "selectionStart"),
+      selectionEndInput: field(panel, "selectionEnd"),
+      selectionActiveInput: field(panel, "selectionActive"),
       dnaLength: role(panel, "dna-length"),
       codonCount: role(panel, "codon-count"),
       trailingCount: role(panel, "trailing-count"),
@@ -919,6 +929,10 @@
       const invalid = Array.from(new Set(sequence.replace(/[ATGCN]/g, "").split("").filter(Boolean)));
       if (invalid.length > 0) throw new Error("Invalid DNA character(s): " + invalid.join(" ") + ". Use only A, T, G, C, and N.");
       return sequence;
+    }
+
+    function cleanSelectedText(raw) {
+      return cleanInput(raw);
     }
 
     function translateDna(dna) {
@@ -1007,6 +1021,48 @@
       });
     }
 
+    function syncSelectionFields(start, end) {
+      if (elements.selectionStartInput) elements.selectionStartInput.value = start ? String(start) : "";
+      if (elements.selectionEndInput) elements.selectionEndInput.value = end ? String(end) : "";
+      if (elements.selectionActiveInput && start && end) elements.selectionActiveInput.value = "1";
+    }
+
+    function selectedDnaSequence() {
+      const selection = editorState.selection;
+      if (!selection) return "";
+      if (selection.type === "dna") return editorState.dna.slice(selection.start - 1, selection.end);
+      const ntStart = selection.start * 3 - 2;
+      const ntEnd = Math.min(selection.end * 3, editorState.dna.length);
+      return editorState.dna.slice(ntStart - 1, ntEnd);
+    }
+
+    function renderDnaSelectionSummary(selection, aaRange) {
+      const selectedDna = selectedDnaSequence();
+      const proteinText = aaRange ? editorState.protein.slice(aaRange.start - 1, aaRange.end) : "none";
+      setSummaryRows([
+        ["Selected nucleotide start", selection.start],
+        ["Selected nucleotide end", selection.end],
+        ["Selected nucleotide length", selectedDna.length + " nt"],
+        ["Selected DNA sequence", selectedDna],
+        ["Corresponding amino acid range", aaRange ? aaRange.start + "-" + aaRange.end : "none"],
+        ["Corresponding protein sequence", proteinText]
+      ]);
+    }
+
+    function renderProteinSelectionSummary(selection, ntStart, ntEnd) {
+      const selectedProtein = editorState.protein.slice(selection.start - 1, selection.end);
+      const selectedDna = selectedDnaSequence();
+      setSummaryRows([
+        ["Selected amino acid start", selection.start],
+        ["Selected amino acid end", selection.end],
+        ["Selected amino acid length", selectedProtein.length + " aa"],
+        ["Selected protein sequence", selectedProtein],
+        ["Corresponding nucleotide range", ntStart + "-" + ntEnd],
+        ["Corresponding DNA length", selectedDna.length + " nt"],
+        ["Corresponding DNA sequence", selectedDna]
+      ]);
+    }
+
     function updateHighlights() {
       elements.viewer.querySelectorAll(".nt").forEach((span) => span.classList.remove("selected-dna"));
       elements.viewer.querySelectorAll(".aa").forEach((span) => span.classList.remove("selected-aa"));
@@ -1017,6 +1073,7 @@
       }
       if (selection.type === "dna") {
         const aaRange = aaRangeForNucleotides(selection.start, selection.end);
+        syncSelectionFields(selection.start, selection.end);
         elements.viewer.querySelectorAll(".nt").forEach((span) => {
           const index = Number(span.dataset.ntIndex);
           if (index >= selection.start && index <= selection.end) span.classList.add("selected-dna");
@@ -1027,15 +1084,11 @@
             if (index >= aaRange.start && index <= aaRange.end) span.classList.add("selected-aa");
           });
         }
-        setSummaryRows([
-          ["Selected nucleotide range", selection.start + "-" + selection.end],
-          ["Corresponding amino acid range", aaRange ? aaRange.start + "-" + aaRange.end : "none"],
-          ["Selected DNA sequence", editorState.dna.slice(selection.start - 1, selection.end)],
-          ["Corresponding protein sequence", aaRange ? editorState.protein.slice(aaRange.start - 1, aaRange.end) : "none"]
-        ]);
+        renderDnaSelectionSummary(selection, aaRange);
       } else {
         const ntStart = selection.start * 3 - 2;
-        const ntEnd = selection.end * 3;
+        const ntEnd = Math.min(selection.end * 3, editorState.dna.length);
+        syncSelectionFields(ntStart, ntEnd);
         elements.viewer.querySelectorAll(".aa").forEach((span) => {
           const index = Number(span.dataset.aaIndex);
           if (index >= selection.start && index <= selection.end) span.classList.add("selected-aa");
@@ -1044,12 +1097,7 @@
           const index = Number(span.dataset.ntIndex);
           if (index >= ntStart && index <= ntEnd) span.classList.add("selected-dna");
         });
-        setSummaryRows([
-          ["Selected amino acid range", selection.start + "-" + selection.end],
-          ["Corresponding nucleotide range", ntStart + "-" + ntEnd],
-          ["Selected protein sequence", editorState.protein.slice(selection.start - 1, selection.end)],
-          ["Corresponding DNA sequence", editorState.dna.slice(ntStart - 1, ntEnd)]
-        ]);
+        renderProteinSelectionSummary(selection, ntStart, ntEnd);
       }
     }
 
@@ -1063,6 +1111,36 @@
       if (!editorState.protein) return;
       editorState.selection = { type: "protein", start: Math.max(1, Math.min(start, end)), end: Math.min(editorState.protein.length, Math.max(start, end)) };
       updateHighlights();
+    }
+
+    function applySelectionFromFields(options) {
+      const opts = options || {};
+      if (!editorState.dna) return false;
+      const start = Number(elements.selectionStartInput ? elements.selectionStartInput.value : 0);
+      const end = Number(elements.selectionEndInput ? elements.selectionEndInput.value : 0);
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start || end > editorState.dna.length) {
+        if (!opts.silent) showMessage(panel, "Select a valid 1-based nucleotide region within the cleaned DNA sequence.", "error");
+        return false;
+      }
+      selectDna(start, end);
+      if (!opts.silent) showMessage(panel, "Selection updated.", "ok");
+      scheduleWorkspaceSave();
+      return true;
+    }
+
+    function updateSelectionFromTextarea() {
+      if (!editorState.dna || elements.input.selectionEnd <= elements.input.selectionStart) return;
+      try {
+        const raw = elements.input.value;
+        const before = cleanSelectedText(raw.slice(0, elements.input.selectionStart));
+        const selected = cleanSelectedText(raw.slice(elements.input.selectionStart, elements.input.selectionEnd));
+        if (!selected) return;
+        selectDna(before.length + 1, before.length + selected.length);
+        showMessage(panel, "Selection updated.", "ok");
+        scheduleWorkspaceSave();
+      } catch (err) {
+        showMessage(panel, err.message || String(err), "error");
+      }
     }
 
     function updateTool() {
@@ -1087,7 +1165,11 @@
         ? "Final " + editorState.trailing + " nucleotide" + (editorState.trailing === 1 ? " was" : "s were") + " not translated because " + (editorState.trailing === 1 ? "it does" : "they do") + " not form a complete codon."
         : "";
       renderViewer();
-      updateHighlights();
+      if (elements.selectionActiveInput && elements.selectionActiveInput.value === "1") {
+        applySelectionFromFields({ silent: true });
+      } else {
+        updateHighlights();
+      }
     }
 
     async function copyText(text, emptyMessage) {
@@ -1118,11 +1200,22 @@
     }
 
     elements.input.addEventListener("input", updateTool);
+    panel.querySelector("[data-action='apply-selection']").addEventListener("click", () => applySelectionFromFields());
+    if (elements.selectionStartInput) elements.selectionStartInput.addEventListener("change", () => applySelectionFromFields({ silent: true }));
+    if (elements.selectionEndInput) elements.selectionEndInput.addEventListener("change", () => applySelectionFromFields({ silent: true }));
+    elements.input.addEventListener("select", updateSelectionFromTextarea);
+    elements.input.addEventListener("mouseup", updateSelectionFromTextarea);
+    elements.input.addEventListener("keyup", updateSelectionFromTextarea);
+    elements.input.addEventListener("touchend", updateSelectionFromTextarea);
     panel.querySelector("[data-action='clear-editor']").addEventListener("click", () => {
       elements.input.value = "";
+      if (elements.selectionStartInput) elements.selectionStartInput.value = "1";
+      if (elements.selectionEndInput) elements.selectionEndInput.value = "1";
+      if (elements.selectionActiveInput) elements.selectionActiveInput.value = "";
       updateTool();
       saveWorkspaceState();
     });
+    panel.querySelector("[data-action='copy-selection']").addEventListener("click", () => copyText(selectedDnaSequence(), "No selected DNA sequence to copy."));
     panel.querySelector("[data-action='copy-protein']").addEventListener("click", () => copyText(editorState.protein, "No protein sequence to copy."));
     panel.querySelector("[data-action='copy-dna']").addEventListener("click", () => copyText(editorState.dna, "No cleaned DNA sequence to copy."));
     elements.viewer.addEventListener("pointerdown", (event) => {
