@@ -5,6 +5,7 @@
   const ASSET_BASE = new URL("./", CURRENT_SCRIPT.src);
   const SHARED_WORKER_URL = new URL("bioinfo-runtime.sharedworker.js", ASSET_BASE).href;
   const DEFAULT_TOOL = "sequence-alignment";
+  const CLEAR_DATA_TOOL = "clear-data";
   const STORAGE_KEY = "usabo.bioinfo.workspace.v1";
   const RESULT_ROLES = ["summary", "table", "output", "alignment-output", "alignment-table", "tree-newick", "tree-diagram"];
 
@@ -18,7 +19,8 @@
     { id: "sequence-editor", title: "Sequence Editor" },
     { id: "sequence-alignment", title: "Sequence Alignment" },
     { id: "tm-calculator", title: "Tm Calculator" },
-    { id: "tree-builder", title: "Tree Builder" }
+    { id: "tree-builder", title: "Tree Builder" },
+    { id: CLEAR_DATA_TOOL, title: "Clear Data" }
   ];
 
   const TOOL_MAP = new Map(TOOLS.map((tool) => [tool.id, tool]));
@@ -280,7 +282,7 @@
 
   function saveActiveForm() {
     const panel = role(app, "tool-panel");
-    if (!panel || !state.activeTool) return;
+    if (!panel || !state.activeTool || state.activeTool === CLEAR_DATA_TOOL) return;
     state.formState.set(state.activeTool, formSnapshot(panel));
   }
 
@@ -310,14 +312,14 @@
 
   function saveActiveResult() {
     const panel = role(app, "tool-panel");
-    if (!panel || !state.activeTool) return;
+    if (!panel || !state.activeTool || state.activeTool === CLEAR_DATA_TOOL) return;
     state.resultState.set(state.activeTool, resultSnapshot(panel));
   }
 
   function mapToObject(map) {
     const object = {};
     map.forEach((value, key) => {
-      if (TOOL_MAP.has(key)) object[key] = value;
+      if (TOOL_MAP.has(key) && key !== CLEAR_DATA_TOOL) object[key] = value;
     });
     return object;
   }
@@ -346,6 +348,7 @@
   }
 
   function saveWorkspaceState() {
+    if (state.activeTool === CLEAR_DATA_TOOL) return;
     saveActiveForm();
     saveActiveResult();
     try {
@@ -371,6 +374,21 @@
       element.addEventListener("input", scheduleWorkspaceSave);
       element.addEventListener("change", scheduleWorkspaceSave);
     });
+  }
+
+  function clearSavedWorkspace(panel) {
+    if (!window.confirm("Clear saved inputs and outputs for Bioinformatics Tools?")) return;
+    window.clearTimeout(state.saveTimer);
+    state.storedActiveTool = "";
+    state.latestText.clear();
+    state.formState.clear();
+    state.resultState.clear();
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      // Storage may be unavailable; there is still no in-memory state left to restore.
+    }
+    showMessage(panel, "Saved data cleared.", "ok");
   }
 
   function toolShell(title, inputHtml, resultsHtml) {
@@ -408,6 +426,11 @@
     "notepad": () => toolShell(
       "Notepad",
       html`<section class="panel"><textarea data-field="text" spellcheck="false" style="min-height:560px;"></textarea></section>`,
+      ""
+    ),
+    "clear-data": () => toolShell(
+      "Clear Data",
+      html`<section class="panel"><div class="buttons"><button type="button" data-action="clear-data">Clear data</button></div>${messageBlock()}</section>`,
       ""
     ),
     "codon-alignment": () => toolShell(
@@ -1134,6 +1157,11 @@
   }
 
   function attachToolEvents(panel) {
+    if (state.activeTool === CLEAR_DATA_TOOL) {
+      const clear = panel.querySelector("[data-action='clear-data']");
+      if (clear) clear.addEventListener("click", () => clearSavedWorkspace(panel));
+      return;
+    }
     if (state.activeTool === "sequence-editor") {
       initSequenceEditor(panel);
       return;
