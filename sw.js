@@ -1,12 +1,13 @@
 "use strict";
 
-const STATIC_CACHE = "usabo-practical-static-v3";
-const RUNTIME_CACHE = "usabo-practical-runtime-v3";
+const STATIC_CACHE = "usabo-practical-static-v4";
+const RUNTIME_CACHE = "usabo-practical-runtime-v4";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./assets/site.css",
   "./assets/bioinfo-app.js",
+  "./assets/ml-tools.js",
   "./assets/bioinfo-runtime.sharedworker.js",
   "./assets/biopython-tools.js",
   "./assets/py/biotools.py",
@@ -15,7 +16,7 @@ const CORE_ASSETS = [
   "./assets/vendor/clustalo/clustalo.wasm",
   "./camp-resources/",
   "./camp-resources/ibo-bioinformatics-tools/",
-  "./camp-resources/ibo-bioinformatics-tools/machine-learning/"
+  "./camp-resources/machine-learning-tools/"
 ];
 
 self.addEventListener("install", (event) => {

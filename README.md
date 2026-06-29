@@ -6,7 +6,7 @@ Static GitHub Pages site for practical computational biology resources.
 
 - `/` - Home
 - `/camp-resources/` - Camp Resources landing page
-- `/camp-resources/ibo-bioinformatics-tools/` - IBO Practical Tools index
+- `/camp-resources/ibo-bioinformatics-tools/` - Bioinformatics tools
 - `/camp-resources/ibo-bioinformatics-tools/notepad/` - Notepad
 - `/camp-resources/ibo-bioinformatics-tools/codon-alignment/` - Codon Alignment
 - `/camp-resources/ibo-bioinformatics-tools/dna-to-protein/` - DNA to Protein
@@ -17,7 +17,5 @@ Static GitHub Pages site for practical computational biology resources.
 - `/camp-resources/ibo-bioinformatics-tools/sequence-alignment/` - Sequence Alignment
 - `/camp-resources/ibo-bioinformatics-tools/tm-calculator/` - Tm Calculator
 - `/camp-resources/ibo-bioinformatics-tools/tree-builder/` - Tree Builder
-- `/camp-resources/ibo-bioinformatics-tools/dataset-explorer/` - Dataset Explorer placeholder
-- `/camp-resources/ibo-bioinformatics-tools/regression-trainer/` - Regression Trainer placeholder
-- `/camp-resources/ibo-bioinformatics-tools/regression-evaluator/` - Regression Evaluator placeholder
+- `/camp-resources/machine-learning-tools/` - Machine learning tools
 - `/plant-computation-biology/` - Coming soon page

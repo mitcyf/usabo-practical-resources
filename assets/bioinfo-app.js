@@ -387,6 +387,7 @@
             <button type="button" class="secondary" data-action="copy-protein">Copy protein sequence</button>
             <button type="button" class="secondary" data-action="copy-dna">Copy cleaned DNA sequence</button>
           </div>
+          <p data-role="trailing-note" class="tool-note"></p>
           ${messageBlock()}
           <h3>Protein sequence</h3>
           <div data-role="protein-output" class="protein-output"></div>
@@ -780,6 +781,7 @@
       dnaLength: role(panel, "dna-length"),
       codonCount: role(panel, "codon-count"),
       trailingCount: role(panel, "trailing-count"),
+      trailingNote: role(panel, "trailing-note"),
       message: role(panel, "message"),
       proteinOutput: role(panel, "protein-output"),
       viewer: role(panel, "sequence-viewer"),
@@ -819,11 +821,7 @@
 
     function renderViewer() {
       elements.viewer.textContent = "";
-      if (!editorState.dna) {
-        const empty = document.createElement("p");
-        return;
-        return;
-      }
+      if (!editorState.dna) return;
       const totalSlots = editorState.protein.length + (editorState.trailing > 0 ? 1 : 0);
       for (let slotStart = 0; slotStart < totalSlots; slotStart += CODONS_PER_LINE) {
         const slotEnd = Math.min(slotStart + CODONS_PER_LINE, totalSlots);
@@ -966,6 +964,9 @@
       elements.codonCount.textContent = String(editorState.protein.length);
       elements.trailingCount.textContent = String(editorState.trailing);
       elements.proteinOutput.textContent = editorState.protein;
+      elements.trailingNote.textContent = editorState.trailing > 0
+        ? "Final " + editorState.trailing + " nucleotide" + (editorState.trailing === 1 ? " was" : "s were") + " not translated because " + (editorState.trailing === 1 ? "it does" : "they do") + " not form a complete codon."
+        : "";
       renderViewer();
       updateHighlights();
     }
@@ -979,7 +980,21 @@
         await navigator.clipboard.writeText(text);
         showMessage(panel, "Copied to clipboard.", "ok");
       } catch (err) {
-        showMessage(panel, "Could not copy automatically. Select and copy manually.", "error");
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        temp.setAttribute("readonly", "");
+        temp.style.position = "fixed";
+        temp.style.left = "-9999px";
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand("copy");
+          showMessage(panel, "Copied to clipboard.", "ok");
+        } catch (copyErr) {
+          showMessage(panel, "Could not copy automatically. Select and copy manually.", "error");
+        } finally {
+          document.body.removeChild(temp);
+        }
       }
     }
 
