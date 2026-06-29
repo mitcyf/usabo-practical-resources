@@ -5,6 +5,8 @@
   const ASSET_BASE = new URL("./", CURRENT_SCRIPT.src);
   const SHARED_WORKER_URL = new URL("bioinfo-runtime.sharedworker.js", ASSET_BASE).href;
   const DEFAULT_TOOL = "sequence-alignment";
+  const STORAGE_KEY = "usabo.bioinfo.workspace.v1";
+  const RESULT_ROLES = ["summary", "table", "output", "alignment-output", "alignment-table", "tree-newick", "tree-diagram"];
 
   const TOOLS = [
     { id: "notepad", title: "Notepad" },
@@ -25,14 +27,17 @@
 
   const state = {
     activeTool: "",
+    storedActiveTool: "",
     latestText: new Map(),
     formState: new Map(),
+    resultState: new Map(),
     worker: null,
     workerPort: null,
     workerReady: false,
     workerFailed: false,
     requestId: 0,
-    pending: new Map()
+    pending: new Map(),
+    saveTimer: 0
   };
 
   function html(strings, ...values) {
@@ -104,7 +109,7 @@
   function clearResultAreas(panel) {
     hideResults(panel);
     showMessage(panel, "", "");
-    ["summary", "table", "output", "alignment-output", "alignment-table", "tree-newick", "tree-diagram"].forEach((name) => {
+    RESULT_ROLES.forEach((name) => {
       const element = role(panel, name);
       if (element) element.textContent = "";
     });
@@ -277,6 +282,95 @@
     const panel = role(app, "tool-panel");
     if (!panel || !state.activeTool) return;
     state.formState.set(state.activeTool, formSnapshot(panel));
+  }
+
+  function resultSnapshot(panel) {
+    const section = role(panel, "results");
+    const roles = {};
+    RESULT_ROLES.forEach((name) => {
+      const element = role(panel, name);
+      if (element) roles[name] = element.innerHTML;
+    });
+    return {
+      visible: Boolean(section && section.style.display !== "none"),
+      roles
+    };
+  }
+
+  function restoreResult(panel, snapshot) {
+    if (!snapshot || typeof snapshot !== "object") return;
+    const roles = snapshot.roles && typeof snapshot.roles === "object" ? snapshot.roles : {};
+    Object.entries(roles).forEach(([name, markup]) => {
+      const element = role(panel, name);
+      if (element) element.innerHTML = String(markup || "");
+    });
+    if (snapshot.visible) showResults(panel);
+    else hideResults(panel);
+  }
+
+  function saveActiveResult() {
+    const panel = role(app, "tool-panel");
+    if (!panel || !state.activeTool) return;
+    state.resultState.set(state.activeTool, resultSnapshot(panel));
+  }
+
+  function mapToObject(map) {
+    const object = {};
+    map.forEach((value, key) => {
+      if (TOOL_MAP.has(key)) object[key] = value;
+    });
+    return object;
+  }
+
+  function loadWorkspaceState() {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (!saved || typeof saved !== "object") return;
+
+      if (TOOL_MAP.has(saved.activeTool)) state.storedActiveTool = saved.activeTool;
+
+      Object.entries(saved.forms || {}).forEach(([id, snapshot]) => {
+        if (TOOL_MAP.has(id) && snapshot && typeof snapshot === "object") state.formState.set(id, snapshot);
+      });
+      Object.entries(saved.results || {}).forEach(([id, snapshot]) => {
+        if (TOOL_MAP.has(id) && snapshot && typeof snapshot === "object") state.resultState.set(id, snapshot);
+      });
+      Object.entries(saved.latestText || {}).forEach(([id, text]) => {
+        if (TOOL_MAP.has(id)) state.latestText.set(id, String(text || ""));
+      });
+    } catch (err) {
+      state.storedActiveTool = "";
+    }
+  }
+
+  function saveWorkspaceState() {
+    saveActiveForm();
+    saveActiveResult();
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: 1,
+        activeTool: state.activeTool,
+        forms: mapToObject(state.formState),
+        results: mapToObject(state.resultState),
+        latestText: mapToObject(state.latestText)
+      }));
+    } catch (err) {
+      // Storage may be unavailable or full; the tools should keep working without persistence.
+    }
+  }
+
+  function scheduleWorkspaceSave() {
+    window.clearTimeout(state.saveTimer);
+    state.saveTimer = window.setTimeout(saveWorkspaceState, 200);
+  }
+
+  function attachPersistence(panel) {
+    panel.querySelectorAll("[data-field]").forEach((element) => {
+      element.addEventListener("input", scheduleWorkspaceSave);
+      element.addEventListener("change", scheduleWorkspaceSave);
+    });
   }
 
   function toolShell(title, inputHtml, resultsHtml) {
@@ -468,6 +562,7 @@
       showMessage(panel, err.message || String(err), "error");
     } finally {
       setBusy(panel, false);
+      saveWorkspaceState();
     }
   }
 
@@ -761,6 +856,7 @@
     });
     state.latestText.set(state.activeTool, "");
     clearResultAreas(panel);
+    saveWorkspaceState();
   }
 
   const GENETIC_CODE = {
@@ -1002,6 +1098,7 @@
     panel.querySelector("[data-action='clear-editor']").addEventListener("click", () => {
       elements.input.value = "";
       updateTool();
+      saveWorkspaceState();
     });
     panel.querySelector("[data-action='copy-protein']").addEventListener("click", () => copyText(editorState.protein, "No protein sequence to copy."));
     panel.querySelector("[data-action='copy-dna']").addEventListener("click", () => copyText(editorState.dna, "No cleaned DNA sequence to copy."));
@@ -1043,11 +1140,13 @@
     }
     if (state.activeTool === "notepad") {
       const textArea = field(panel, "text");
-      textArea.addEventListener("input", () => {
+      const updateHeading = () => {
         const title = textArea.value.split(/\r?\n/)[0].slice(0, 28) || "Notepad";
         const heading = panel.querySelector("h2");
         if (heading) heading.textContent = title === "Notepad" ? "Notepad" : "Notepad: " + title;
-      });
+      };
+      textArea.addEventListener("input", updateHeading);
+      updateHeading();
       return;
     }
     const run = panel.querySelector("[data-action='run']");
@@ -1061,12 +1160,17 @@
   function renderTool(toolId, options) {
     const id = TOOL_MAP.has(toolId) ? toolId : DEFAULT_TOOL;
     const opts = options || {};
-    if (!opts.skipSave) saveActiveForm();
+    if (!opts.skipSave) {
+      saveActiveForm();
+      saveActiveResult();
+    }
     state.activeTool = id;
     const panel = role(app, "tool-panel");
     panel.innerHTML = templates[id]();
     restoreForm(panel, state.formState.get(id));
     attachToolEvents(panel);
+    restoreResult(panel, state.resultState.get(id));
+    attachPersistence(panel);
     app.querySelectorAll("[data-tool-link]").forEach((button) => {
       const selected = button.dataset.toolLink === id;
       button.classList.toggle("active", selected);
@@ -1077,12 +1181,14 @@
       url.hash = id;
       history.replaceState(null, "", url);
     }
+    saveWorkspaceState();
     if (!opts.noFocus) panel.focus({ preventScroll: true });
   }
 
   function initialToolFromHash() {
     const hash = window.location.hash.replace(/^#/, "").trim();
-    return TOOL_MAP.has(hash) ? hash : DEFAULT_TOOL;
+    if (TOOL_MAP.has(hash)) return hash;
+    return TOOL_MAP.has(state.storedActiveTool) ? state.storedActiveTool : DEFAULT_TOOL;
   }
 
   function renderAppShell() {
@@ -1115,15 +1221,17 @@
     if (id !== state.activeTool) renderTool(id, { skipHash: true });
   });
 
-  window.addEventListener("beforeunload", (event) => {
-    const panel = role(app, "tool-panel");
-    if (state.activeTool !== "notepad" || !panel) return;
-    const text = value(panel, "text");
-    if (!text.trim()) return;
-    event.preventDefault();
-    event.returnValue = "Changes may not be saved";
+  function flushWorkspaceSave() {
+    window.clearTimeout(state.saveTimer);
+    saveWorkspaceState();
+  }
+
+  window.addEventListener("beforeunload", flushWorkspaceSave);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushWorkspaceSave();
   });
 
+  loadWorkspaceState();
   renderAppShell();
   if ("requestIdleCallback" in window) window.requestIdleCallback(preloadRuntimes, { timeout: 2000 });
   else window.setTimeout(preloadRuntimes, 800);
