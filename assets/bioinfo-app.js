@@ -490,24 +490,20 @@
     ),
     "sequence-editor": () => toolShell(
       "Sequence Editor",
-      html`<div class="tool-grid">
+      html`<div class="tool-grid sequence-editor-grid">
         <section class="panel">
           <label>DNA sequence</label>
           <textarea data-field="dna" spellcheck="false"></textarea>
-          <div class="settings three">
-            <div><label>Start</label><input data-field="selectionStart" type="number" value="1" min="1" step="1"></div>
-            <div><label>End</label><input data-field="selectionEnd" type="number" value="1" min="1" step="1"></div>
-            <div><label>Region</label><button type="button" class="secondary" data-action="apply-selection">Apply selection</button></div>
-            <input data-field="selectionActive" type="hidden" value="">
-          </div>
-          <div class="metric-grid">
-            <div class="metric"><span>Cleaned DNA length</span><strong data-role="dna-length">0 nt</strong></div>
-            <div class="metric"><span>Complete codons</span><strong data-role="codon-count">0</strong></div>
-            <div class="metric"><span>Trailing nucleotides</span><strong data-role="trailing-count">0</strong></div>
+          <input data-field="selectionStart" type="hidden" value="1">
+          <input data-field="selectionEnd" type="hidden" value="1">
+          <input data-field="selectionActive" type="hidden" value="">
+          <div class="metric-grid sequence-metrics">
+            <div class="metric" aria-label="Cleaned DNA length"><strong data-role="dna-length">0 nt</strong></div>
+            <div class="metric" aria-label="Complete codons"><strong data-role="codon-count">0</strong></div>
+            <div class="metric" aria-label="Trailing nucleotides"><strong data-role="trailing-count">0</strong></div>
           </div>
           <div class="buttons">
             <button type="button" class="secondary" data-action="clear-editor">Clear</button>
-            <button type="button" class="secondary" data-action="copy-selection">Copy selected DNA sequence</button>
             <button type="button" class="secondary" data-action="copy-protein">Copy protein sequence</button>
             <button type="button" class="secondary" data-action="copy-dna">Copy cleaned DNA sequence</button>
           </div>
@@ -517,7 +513,7 @@
           <div data-role="protein-output" class="protein-output"></div>
         </section>
         <section class="panel">
-          <h3>Linked Sequence Viewer</h3>
+          <h2>Linked Sequence Viewer</h2>
           <div data-role="sequence-viewer" class="viewer-wrap"></div>
           <h3>Selection</h3>
           <div data-role="selection-summary" class="selection-summary" aria-live="polite">No sequence selected.</div>
@@ -787,7 +783,6 @@
     if (maxDepth === 0) maxDepth = 1;
 
     function x(node) {
-      if (!node.children || node.children.length === 0) return left + branchWidth;
       return left + (node._depth / maxDepth) * branchWidth;
     }
 
@@ -821,14 +816,15 @@
     draw(tree);
 
     leaves.forEach((leaf) => {
+      const leafX = x(leaf);
       const dot = document.createElementNS(ns, "circle");
-      dot.setAttribute("cx", String(left + branchWidth));
+      dot.setAttribute("cx", leafX.toFixed(2));
       dot.setAttribute("cy", leaf._y.toFixed(2));
       dot.setAttribute("r", "3.5");
       dot.setAttribute("class", "tree-leaf-dot");
       svg.appendChild(dot);
       const text = document.createElementNS(ns, "text");
-      text.setAttribute("x", labelX);
+      text.setAttribute("x", (leafX + 12).toFixed(2));
       text.setAttribute("y", (leaf._y + 4).toFixed(2));
       text.setAttribute("class", "tree-leaf-label");
       text.textContent = leaf.name || "Sequence";
@@ -954,7 +950,13 @@
 
     function renderViewer() {
       elements.viewer.textContent = "";
-      if (!editorState.dna) return;
+      if (!editorState.dna) {
+        const empty = document.createElement("p");
+        empty.className = "tool-note";
+        empty.textContent = "Paste a DNA sequence to begin.";
+        elements.viewer.appendChild(empty);
+        return;
+      }
       const totalSlots = editorState.protein.length + (editorState.trailing > 0 ? 1 : 0);
       for (let slotStart = 0; slotStart < totalSlots; slotStart += CODONS_PER_LINE) {
         const slotEnd = Math.min(slotStart + CODONS_PER_LINE, totalSlots);
@@ -1200,7 +1202,8 @@
     }
 
     elements.input.addEventListener("input", updateTool);
-    panel.querySelector("[data-action='apply-selection']").addEventListener("click", () => applySelectionFromFields());
+    const applySelectionButton = panel.querySelector("[data-action='apply-selection']");
+    if (applySelectionButton) applySelectionButton.addEventListener("click", () => applySelectionFromFields());
     if (elements.selectionStartInput) elements.selectionStartInput.addEventListener("change", () => applySelectionFromFields({ silent: true }));
     if (elements.selectionEndInput) elements.selectionEndInput.addEventListener("change", () => applySelectionFromFields({ silent: true }));
     elements.input.addEventListener("select", updateSelectionFromTextarea);
@@ -1215,7 +1218,8 @@
       updateTool();
       saveWorkspaceState();
     });
-    panel.querySelector("[data-action='copy-selection']").addEventListener("click", () => copyText(selectedDnaSequence(), "No selected DNA sequence to copy."));
+    const copySelectionButton = panel.querySelector("[data-action='copy-selection']");
+    if (copySelectionButton) copySelectionButton.addEventListener("click", () => copyText(selectedDnaSequence(), "No selected DNA sequence to copy."));
     panel.querySelector("[data-action='copy-protein']").addEventListener("click", () => copyText(editorState.protein, "No protein sequence to copy."));
     panel.querySelector("[data-action='copy-dna']").addEventListener("click", () => copyText(editorState.dna, "No cleaned DNA sequence to copy."));
     elements.viewer.addEventListener("pointerdown", (event) => {

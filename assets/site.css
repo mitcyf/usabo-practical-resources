@@ -394,6 +394,133 @@ th {
   font-size: 0.95rem;
 }
 
+.tool-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.viewer-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 16px;
+}
+
+.sequence-block {
+  margin-bottom: 18px;
+  min-width: max-content;
+}
+
+.sequence-line {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 10px;
+  align-items: start;
+  margin: 4px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+
+.line-label {
+  color: var(--muted);
+  font-weight: 800;
+  text-align: right;
+  user-select: none;
+}
+
+.slot-track {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.codon-slot,
+.aa-slot {
+  display: inline-flex;
+  width: 3ch;
+  min-width: 3ch;
+  justify-content: center;
+  align-items: center;
+}
+
+.codon-slot {
+  justify-content: flex-start;
+}
+
+.codon-slot.partial {
+  color: #7b8794;
+}
+
+.nt,
+.aa {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.aa {
+  font-weight: 800;
+}
+
+.nt.selected-dna {
+  background: #bfdbfe;
+  color: #0f2747;
+}
+
+.aa.selected-aa {
+  background: #fde68a;
+  color: #513c06;
+}
+
+.aa.stop-aa {
+  color: var(--danger);
+  font-weight: 900;
+}
+
+.aa.ambiguous-aa {
+  color: #6b7280;
+}
+
+.sequence-metrics .metric strong {
+  margin-top: 0;
+}
+
+.selection-summary {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  padding: 14px;
+  min-height: 90px;
+}
+
+.selection-summary p {
+  margin: 4px 0;
+}
+
+.selection-summary code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.protein-output {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #111827;
+  color: #f9fafb;
+  padding: 12px;
+  font: 0.95rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 .sequence-viewer {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -467,6 +594,7 @@ th {
   }
 
   .input-grid,
+  .tool-grid,
   .settings,
   .settings.three,
   .settings.two {
