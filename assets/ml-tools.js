@@ -60,7 +60,8 @@
         selectedFeatures: [],
         regressionTrainTable: "",
         regressionValidationTable: "",
-        classifierValues: "",
+        regressionModelText: "",
+        classifierWeights: "",
         classifierThreshold: ""
       },
       splitConfig: null,
@@ -403,8 +404,8 @@
       ]);
       addOutputBlock(output, "Included Features", split.selectedFeatures.join(", "));
       addOutputBlock(output, "Encoded Columns", split.featureNames.join(", "));
-      renderTable(output, "Training Data", previewHeaders(split), previewRows(split.trainRows, split));
-      renderTable(output, "Validation Data", previewHeaders(split), previewRows(split.validationRows, split));
+      renderTable(output, "Training Data", previewHeaders(split), previewRows(split.trainRows, split), { fixedHeight: true });
+      renderTable(output, "Validation Data", previewHeaders(split), previewRows(split.validationRows, split), { fixedHeight: true });
     }
 
     root.appendChild(controls);
@@ -416,21 +417,39 @@
     const root = renderShell("Regression Trainer");
 
     const controls = document.createElement("div");
-    controls.innerHTML = '<label for="ml-regression-train-table">Training table</label><textarea id="ml-regression-train-table" spellcheck="false"></textarea><label for="ml-regression-validation-table">Validation table</label><textarea id="ml-regression-validation-table" spellcheck="false"></textarea><div class="buttons"><button type="button" data-train-model>Train regression model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
+    controls.innerHTML = '<label for="ml-regression-train-table">Training table</label><textarea id="ml-regression-train-table" spellcheck="false"></textarea><label for="ml-regression-validation-table">Validation table</label><textarea id="ml-regression-validation-table" spellcheck="false"></textarea><div class="buttons"><button type="button" data-train-model>Train regression model</button></div><label for="ml-regression-model-text">Model weights</label><textarea id="ml-regression-model-text" spellcheck="false"></textarea><div class="buttons"><button type="button" data-load-model>Load model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
     const trainBox = controls.querySelector("#ml-regression-train-table");
     const validationBox = controls.querySelector("#ml-regression-validation-table");
+    const modelBox = controls.querySelector("#ml-regression-model-text");
     trainBox.value = state.ui.regressionTrainTable || "";
     validationBox.value = state.ui.regressionValidationTable || "";
-    [trainBox, validationBox].forEach((box) => box.addEventListener("change", () => {
+    modelBox.value = state.ui.regressionModelText || "";
+    [trainBox, validationBox, modelBox].forEach((box) => box.addEventListener("change", () => {
       state.ui.regressionTrainTable = trainBox.value;
       state.ui.regressionValidationTable = validationBox.value;
+      state.ui.regressionModelText = modelBox.value;
       saveState();
     }));
     controls.querySelector("[data-train-model]").addEventListener("click", () => {
       state.ui.regressionTrainTable = trainBox.value;
       state.ui.regressionValidationTable = validationBox.value;
+      state.ui.regressionModelText = modelBox.value;
       try {
         const model = trainCurrentModel();
+        state.models.push(model);
+        saveState();
+        renderRegressionTrainer();
+      } catch (err) {
+        showMessage(controls.querySelector("[data-train-message]"), err.message || String(err), "error");
+      }
+    });
+    controls.querySelector("[data-load-model]").addEventListener("click", () => {
+      state.ui.regressionTrainTable = trainBox.value;
+      state.ui.regressionValidationTable = validationBox.value;
+      state.ui.regressionModelText = modelBox.value;
+      try {
+        const model = parseModelWeights(state.ui.regressionModelText);
+        model.id = nextModelId();
         state.models.push(model);
         saveState();
         renderRegressionTrainer();
@@ -450,20 +469,21 @@
 
   function renderClassifierEvaluator() {
     const root = renderShell("Classifier Evaluator");
+    if (!requireDataset(root)) return;
 
     const controls = document.createElement("div");
-    controls.innerHTML = '<label for="ml-classifier-values">True and predicted values</label><textarea id="ml-classifier-values" spellcheck="false"></textarea><div class="settings two"><div><label for="ml-classifier-threshold">Threshold</label><input id="ml-classifier-threshold" type="number" step="any"></div></div><div class="buttons"><button type="button" data-evaluate-classifier>Evaluate classifier</button></div><div class="message" data-classifier-message role="status" aria-live="polite"></div>';
-    const valuesBox = controls.querySelector("#ml-classifier-values");
+    controls.innerHTML = '<label for="ml-classifier-weights">Model weights</label><textarea id="ml-classifier-weights" spellcheck="false"></textarea><div class="settings two"><div><label for="ml-classifier-threshold">Threshold</label><input id="ml-classifier-threshold" type="number" step="any"></div></div><div class="buttons"><button type="button" data-evaluate-classifier>Evaluate classifier</button></div><div class="message" data-classifier-message role="status" aria-live="polite"></div>';
+    const weightsBox = controls.querySelector("#ml-classifier-weights");
     const thresholdBox = controls.querySelector("#ml-classifier-threshold");
-    valuesBox.value = state.ui.classifierValues || "";
+    weightsBox.value = state.ui.classifierWeights || "";
     thresholdBox.value = state.ui.classifierThreshold || "";
-    [valuesBox, thresholdBox].forEach((control) => control.addEventListener("change", () => {
-      state.ui.classifierValues = valuesBox.value;
+    [weightsBox, thresholdBox].forEach((control) => control.addEventListener("change", () => {
+      state.ui.classifierWeights = weightsBox.value;
       state.ui.classifierThreshold = thresholdBox.value;
       saveState();
     }));
     controls.querySelector("[data-evaluate-classifier]").addEventListener("click", () => {
-      state.ui.classifierValues = valuesBox.value;
+      state.ui.classifierWeights = weightsBox.value;
       state.ui.classifierThreshold = thresholdBox.value;
       saveState();
       renderClassifierEvaluator();
@@ -471,11 +491,12 @@
 
     const output = document.createElement("div");
     const threshold = Number(state.ui.classifierThreshold);
-    if (!state.ui.classifierValues.trim() || state.ui.classifierThreshold === "" || !Number.isFinite(threshold)) {
-      addMessage(output, "Paste values and enter a numeric threshold.", "error");
+    if (!state.ui.classifierWeights.trim() || state.ui.classifierThreshold === "" || !Number.isFinite(threshold)) {
+      addMessage(output, "Paste model weights and enter a numeric threshold.", "error");
     } else {
       try {
-        const evaluation = evaluateClassifierRows(parseClassifierValues(state.ui.classifierValues), threshold);
+        const model = parseModelWeights(state.ui.classifierWeights);
+        const evaluation = evaluateClassifierModel(model, threshold);
         renderTable(output, "Confusion Matrix", ["", "Predicted high-biomass", "Predicted low-biomass"], [
           ["True high-biomass", evaluation.tp, evaluation.fn],
           ["True low-biomass", evaluation.fp, evaluation.tn]
@@ -849,15 +870,45 @@
     };
   }
 
-  function parseClassifierValues(text) {
-    const table = parsePastedTable(text, "Classifier values");
-    const rowColumn = rowNumberColumn(table.headers);
-    const headers = table.headers.filter((header) => header !== rowColumn);
-    const numericHeaders = headers.filter((header) => table.rows.every((row) => isFiniteNumberString(row[header])));
-    const actual = numericHeaders.find((header) => /true|actual/i.test(header)) || numericHeaders[0];
-    const predicted = numericHeaders.find((header) => header !== actual && /pred/i.test(header)) || numericHeaders.find((header) => header !== actual);
-    if (!actual || !predicted) throw new Error("Paste a table with true and predicted numeric columns.");
-    return table.rows.map((row) => ({ actual: numberValue(row, actual), predicted: numberValue(row, predicted) }));
+  function parseModelWeights(text) {
+    const table = parsePastedTable(text, "Model weights");
+    const headers = table.headers;
+    const featureHeader = headers.find((header) => /feature|term|variable|name/i.test(header)) || headers[0];
+    const coefficientHeader = headers.find((header) => /coefficient|weight|value|beta/i.test(header) && header !== featureHeader) || headers.find((header) => header !== featureHeader);
+    if (!featureHeader || !coefficientHeader) throw new Error("Model weights must include feature and coefficient columns.");
+
+    let target = "biomass_sum";
+    let intercept = 0;
+    const featureNames = [];
+    const coefficients = [];
+    table.rows.forEach((row) => {
+      const feature = String(row[featureHeader] || "").trim();
+      const rawCoefficient = String(row[coefficientHeader] || "").trim();
+      if (!feature) return;
+      const lower = feature.toLowerCase();
+      if (lower === "target") {
+        if (rawCoefficient) target = rawCoefficient;
+        return;
+      }
+      if (!isFiniteNumberString(rawCoefficient)) throw new Error("Coefficient for " + feature + " is not numeric.");
+      const coefficient = Number(rawCoefficient);
+      if (lower === "intercept" || lower === "constant" || lower === "bias") {
+        intercept = coefficient;
+      } else {
+        featureNames.push(feature);
+        coefficients.push(coefficient);
+      }
+    });
+    if (!featureNames.length) throw new Error("Model weights must include at least one feature coefficient.");
+    return {
+      id: "Loaded model",
+      target,
+      selectedFeatures: featureNames.slice(),
+      featureNames,
+      intercept,
+      coefficients,
+      metrics: null
+    };
   }
 
   function parsePastedTable(text, label) {
@@ -942,15 +993,20 @@
   }
 
   function renderModelDetails(parent, model) {
-    addMetrics(parent, [
+    const metrics = [
       ["Model", model.id],
-      ["Training R^2", formatNumber(model.metrics.trainR2, 4)],
-      ["Validation R^2", formatNumber(model.metrics.validationR2, 4)],
-      ["Training RMSE", formatNumber(model.metrics.trainRmse, 4)],
-      ["Validation RMSE", formatNumber(model.metrics.validationRmse, 4)]
-    ]);
-    addOutputBlock(parent, "Intercept", formatNumber(model.intercept, 6));
-    renderTable(parent, "Feature Weights", ["Feature", "Coefficient"], model.featureNames.map((name, index) => [name, formatNumber(model.coefficients[index], 6)]));
+      ["Target", model.target || "biomass_sum"]
+    ];
+    if (model.metrics) {
+      metrics.push(
+        ["Training R^2", formatNumber(model.metrics.trainR2, 4)],
+        ["Validation R^2", formatNumber(model.metrics.validationR2, 4)],
+        ["Training RMSE", formatNumber(model.metrics.trainRmse, 4)],
+        ["Validation RMSE", formatNumber(model.metrics.validationRmse, 4)]
+      );
+    }
+    addMetrics(parent, metrics);
+    renderTable(parent, "Model Weights", ["Term", "Value"], modelWeightRows(model));
   }
 
   function renderModelHistory(parent) {
@@ -985,11 +1041,11 @@
       const row = document.createElement("tr");
       [
         model.id,
-        model.selectedFeatures.join(", "),
-        formatNumber(model.metrics.trainR2, 4),
-        formatNumber(model.metrics.validationR2, 4),
-        formatNumber(model.metrics.trainRmse, 4),
-        formatNumber(model.metrics.validationRmse, 4)
+        (model.selectedFeatures || model.featureNames || []).join(", "),
+        modelMetric(model, "trainR2"),
+        modelMetric(model, "validationR2"),
+        modelMetric(model, "trainRmse"),
+        modelMetric(model, "validationRmse")
       ].forEach((value) => appendCell(row, value, "td"));
       const actionCell = appendCell(row, "", "td");
       const clearOne = document.createElement("button");
@@ -1015,20 +1071,47 @@
   }
 
 
-  function evaluateClassifierRows(rows, threshold) {
+  function evaluateClassifierModel(model, threshold) {
+    const target = model.target || "biomass_sum";
+    if (!dataset.numericColumns.includes(target)) throw new Error("Loaded dataset does not contain numeric target column " + target + ".");
     let tp = 0;
     let fp = 0;
     let tn = 0;
     let fn = 0;
-    rows.forEach((row) => {
-      const trueHigh = row.actual > threshold;
-      const predHigh = row.predicted > threshold;
+    dataset.rows.forEach((row) => {
+      const actual = numberValue(row, target);
+      const predicted = predictModelRow(row, model);
+      const trueHigh = actual > threshold;
+      const predHigh = predicted > threshold;
       if (trueHigh && predHigh) tp++;
       else if (!trueHigh && predHigh) fp++;
       else if (!trueHigh && !predHigh) tn++;
       else fn++;
     });
     return { tp, fp, tn, fn };
+  }
+
+  function predictModelRow(row, model) {
+    return model.intercept + model.featureNames.reduce((sum, feature, index) => sum + featureValueForRow(row, feature) * model.coefficients[index], 0);
+  }
+
+  function featureValueForRow(row, feature) {
+    if (dataset.numericColumns.includes(feature)) return numberValue(row, feature);
+    for (const column of dataset.categoricalColumns) {
+      const prefix = column + "_";
+      if (feature.indexOf(prefix) === 0) {
+        return sanitizeName(row[column]) === feature.slice(prefix.length) ? 1 : 0;
+      }
+    }
+    throw new Error("Model feature " + feature + " is not available in the loaded dataset.");
+  }
+
+  function modelWeightRows(model) {
+    return [["Target", model.target || "biomass_sum"], ["Intercept", formatNumber(model.intercept || 0, 10)]].concat(model.featureNames.map((name, index) => [name, formatNumber(model.coefficients[index], 10)]));
+  }
+
+  function modelMetric(model, key) {
+    return model.metrics ? formatNumber(model.metrics[key], 4) : "NA";
   }
 
   function previewHeaders(currentSplit) {
@@ -1149,7 +1232,7 @@
     box.className = "message " + type;
   }
 
-  function renderTable(parent, title, headers, rows) {
+  function renderTable(parent, title, headers, rows, options) {
     const h3 = document.createElement("h3");
     h3.textContent = title;
     const copy = document.createElement("button");
@@ -1157,7 +1240,7 @@
     copy.className = "secondary compact-copy";
     copy.textContent = "Copy table";
     const wrap = document.createElement("div");
-    wrap.className = "table-wrap";
+    wrap.className = "table-wrap" + (options && options.fixedHeight ? " fixed-height" : "");
     const table = document.createElement("table");
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");

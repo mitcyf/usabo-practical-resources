@@ -369,6 +369,23 @@ button.secondary:hover,
   overflow-x: auto;
 }
 
+.table-wrap.fixed-height {
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.table-wrap.fixed-height table {
+  margin-top: 0;
+}
+
+.table-wrap.fixed-height th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
