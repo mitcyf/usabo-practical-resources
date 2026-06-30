@@ -408,7 +408,7 @@
     return html`
       <div class="buttons">
         <button type="button" data-action="run">${runLabel}</button>
-        <button type="button" class="secondary" data-action="clear">Clear</button>
+        <button type="button" class="secondary danger" data-action="clear">Clear</button>
         <button type="button" class="secondary" data-action="copy">Copy results</button>
       </div>
     `;
@@ -431,7 +431,7 @@
     ),
     "clear-data": () => toolShell(
       "Clear Data",
-      html`<section class="panel"><div class="buttons"><button type="button" data-action="clear-data">Clear data</button></div>${messageBlock()}</section>`,
+      html`<section class="panel"><div class="buttons"><button type="button" class="danger" data-action="clear-data">Clear data</button></div>${messageBlock()}</section>`,
       ""
     ),
     "calculator": () => toolShell(
@@ -1087,7 +1087,7 @@
     TOOLS.forEach((tool) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "tool-tab";
+      button.className = tool.id === CLEAR_DATA_TOOL ? "tool-tab danger" : "tool-tab";
       button.dataset.toolLink = tool.id;
       const title = document.createElement("span");
       title.textContent = tool.title;

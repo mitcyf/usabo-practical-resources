@@ -323,6 +323,42 @@ button.secondary:hover,
   color: var(--primary-dark);
 }
 
+button.danger,
+.button-link.danger,
+button[data-action="clear-data"],
+button[data-clear-ml-data] {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}
+
+button.danger:hover,
+.button-link.danger:hover,
+button[data-action="clear-data"]:hover,
+button[data-clear-ml-data]:hover {
+  background: #7f1616;
+  border-color: #7f1616;
+  color: white;
+}
+
+button.secondary.danger,
+.button-link.secondary.danger,
+button.secondary[data-action="clear"],
+button.secondary#clear-tool {
+  background: var(--danger-soft);
+  border-color: #e18b8b;
+  color: var(--danger);
+}
+
+button.secondary.danger:hover,
+.button-link.secondary.danger:hover,
+button.secondary[data-action="clear"]:hover,
+button.secondary#clear-tool:hover {
+  background: #fde2e2;
+  border-color: var(--danger);
+  color: #7f1616;
+}
+
 .message {
   margin-top: 16px;
   padding: 12px 14px;
@@ -733,6 +769,29 @@ th {
   color: var(--muted);
   font-weight: 600;
   line-height: 1.35;
+}
+
+.tool-tab.danger,
+.tool-tab[data-ml-tool="clear-data"],
+.tool-tab[data-tool-link="clear-data"] {
+  border-left-color: var(--danger);
+}
+
+.tool-tab.danger span,
+.tool-tab[data-ml-tool="clear-data"] span,
+.tool-tab[data-tool-link="clear-data"] span {
+  color: var(--danger);
+}
+
+.tool-tab.danger:hover,
+.tool-tab.danger.active,
+.tool-tab[data-ml-tool="clear-data"]:hover,
+.tool-tab[data-ml-tool="clear-data"].active,
+.tool-tab[data-tool-link="clear-data"]:hover,
+.tool-tab[data-tool-link="clear-data"].active {
+  background: var(--danger-soft);
+  border-color: #e18b8b;
+  border-left-color: var(--danger);
 }
 
 .tool-workspace:focus {

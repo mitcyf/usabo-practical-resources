@@ -1,7 +1,7 @@
 "use strict";
 
-const STATIC_CACHE = "usabo-practical-static-v23";
-const RUNTIME_CACHE = "usabo-practical-runtime-v23";
+const STATIC_CACHE = "usabo-practical-static-v24";
+const RUNTIME_CACHE = "usabo-practical-runtime-v24";
 const CORE_ASSETS = [
   "./",
   "./index.html",

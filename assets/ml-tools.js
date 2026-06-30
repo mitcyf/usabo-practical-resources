@@ -497,7 +497,7 @@
   function renderClearData() {
     const root = renderShell("Clear Data");
     const box = document.createElement("div");
-    box.innerHTML = '<div class="buttons"><button type="button" data-clear-ml-data>Clear data</button></div><div class="message" data-clear-message role="status" aria-live="polite"></div>';
+    box.innerHTML = '<div class="buttons"><button type="button" class="danger" data-clear-ml-data>Clear data</button></div><div class="message" data-clear-message role="status" aria-live="polite"></div>';
     const message = box.querySelector("[data-clear-message]");
     box.querySelector("[data-clear-ml-data]").addEventListener("click", () => {
       if (!window.confirm("Clear saved Machine Learning Tools inputs, splits, models, and outputs?")) return;
@@ -999,7 +999,7 @@
     actions.className = "buttons";
     const clearAll = document.createElement("button");
     clearAll.type = "button";
-    clearAll.className = "secondary";
+    clearAll.className = "secondary danger";
     clearAll.textContent = "Clear model history";
     clearAll.addEventListener("click", () => {
       if (!window.confirm("Clear all saved regression models?")) return;
@@ -1041,7 +1041,7 @@
       const clearCell = appendCell(row, "", "td");
       const clearOne = document.createElement("button");
       clearOne.type = "button";
-      clearOne.className = "secondary compact-copy";
+      clearOne.className = "secondary danger compact-copy";
       clearOne.textContent = "Clear";
       clearOne.addEventListener("click", () => {
         state.models = state.models.filter((candidate) => candidate.id !== model.id);
