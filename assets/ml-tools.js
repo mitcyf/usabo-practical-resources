@@ -207,24 +207,48 @@
     grid.className = "tool-grid";
 
     const controls = document.createElement("div");
-    controls.innerHTML = '<label for="ml-csv-input">CSV dataset</label><textarea id="ml-csv-input" spellcheck="false"></textarea><div class="buttons"><button type="button" data-load-dataset>Load dataset</button></div><div class="message" data-input-message role="status" aria-live="polite"></div>';
+    controls.innerHTML = '<label for="ml-csv-input">CSV dataset</label><div class="file-drop-zone" data-csv-drop-zone tabindex="0"><strong>Drop CSV file here</strong><span>or click to choose a file</span><input data-csv-file-input type="file" accept=".csv,text/csv,text/plain"></div><textarea id="ml-csv-input" spellcheck="false"></textarea><div class="buttons"><button type="button" data-load-dataset>Load dataset</button></div><div class="message" data-input-message role="status" aria-live="polite"></div>';
     const textarea = controls.querySelector("textarea");
     textarea.value = state.csvText || "";
     const message = controls.querySelector("[data-input-message]");
-    controls.querySelector("[data-load-dataset]").addEventListener("click", () => {
-      state.csvText = textarea.value;
+    const dropZone = controls.querySelector("[data-csv-drop-zone]");
+    const fileInput = controls.querySelector("[data-csv-file-input]");
+    function loadCsvText(text) {
+      state.csvText = text;
       state.splitConfig = null;
       state.models = [];
       rebuildFromCsv();
-      if (loadError) {
-        showMessage(message, loadError, "error");
-        saveState();
-        renderDataInput();
-      } else {
-        saveState();
-        renderDataInput();
+      saveState();
+      renderDataInput();
+    }
+    function readCsvFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        textarea.value = String(reader.result || "");
+        loadCsvText(textarea.value);
+      };
+      reader.onerror = () => showMessage(message, "Could not read that file.", "error");
+      reader.readAsText(file);
+    }
+    controls.querySelector("[data-load-dataset]").addEventListener("click", () => loadCsvText(textarea.value));
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        fileInput.click();
       }
     });
+    fileInput.addEventListener("change", () => readCsvFile(fileInput.files[0]));
+    ["dragenter", "dragover"].forEach((eventName) => dropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      dropZone.classList.add("dragging");
+    }));
+    ["dragleave", "drop"].forEach((eventName) => dropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      dropZone.classList.remove("dragging");
+    }));
+    dropZone.addEventListener("drop", (event) => readCsvFile(event.dataTransfer.files[0]));
 
     const output = document.createElement("div");
     if (loadError) addMessage(output, loadError, "error");

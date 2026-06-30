@@ -968,3 +968,40 @@ th {
   margin: 0 0 2px;
   font-size: 0.86rem;
 }
+
+
+.file-drop-zone {
+  display: grid;
+  gap: 3px;
+  place-items: center;
+  min-height: 112px;
+  border: 2px dashed #9db6cf;
+  border-radius: 8px;
+  background: #fbfdff;
+  color: var(--muted);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.file-drop-zone strong {
+  color: var(--primary);
+  font-size: 1.02rem;
+}
+
+.file-drop-zone span {
+  font-weight: 700;
+}
+
+.file-drop-zone.dragging,
+.file-drop-zone:focus {
+  border-color: var(--primary);
+  background: #edf6fc;
+  box-shadow: 0 0 0 3px rgba(23, 105, 170, 0.16);
+  outline: none;
+}
+
+.file-drop-zone input {
+  display: none;
+}
