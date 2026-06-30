@@ -1,11 +1,12 @@
 "use strict";
 
-const STATIC_CACHE = "usabo-practical-static-v19";
-const RUNTIME_CACHE = "usabo-practical-runtime-v19";
+const STATIC_CACHE = "usabo-practical-static-v20";
+const RUNTIME_CACHE = "usabo-practical-runtime-v20";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./assets/site.css",
+  "./assets/site-stripes.js",
   "./assets/bioinfo-app.js",
   "./assets/ml-tools.js",
   "./assets/bioinfo-runtime.sharedworker.js",
