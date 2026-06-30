@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "usabo.ml.workspace.v2";
+  const STORAGE_KEY = "usabo.ml.workspace.v3";
   const DEFAULT_TOOL = "data-input";
   const CLEAR_DATA_TOOL = "clear-data";
   const REQUIRED_COLUMNS = [
@@ -20,23 +20,6 @@
     "image_brightness",
     "camera_batch"
   ];
-  const BIOLOGICAL_FEATURES = [
-    "bacterial_density",
-    "VMR",
-    "NN_index",
-    "primary_root_length",
-    "lateral_root_density",
-    "root_hair_density",
-    "root_browning_score",
-    "leaf_area",
-    "chlorophyll_index",
-    "wilting_score",
-    "SRG1_class"
-  ];
-  const METADATA_FEATURES = ["image_brightness", "camera_batch"];
-  const BACTERIAL_FEATURES = ["bacterial_density", "VMR", "NN_index"];
-  const CAMERA_COLUMN = "camera_batch";
-  const TARGET_DEFAULT = "biomass_sum";
   const POSITIVE_CLASS = "high-biomass";
   const NEGATIVE_CLASS = "low-biomass";
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -66,25 +49,22 @@
       activeTool: DEFAULT_TOOL,
       csvText: "",
       ui: {
-        filterClass: "All",
         filterColumn: "",
+        filterValue: "All",
         filterMin: "",
         filterMax: "",
         scatterX: "",
-        scatterY: TARGET_DEFAULT,
+        scatterY: "",
         scatterColor: "none",
-        scatterTrend: true,
-        scatterCorrelation: true,
-        splitTarget: TARGET_DEFAULT,
-        trainPercent: 70,
-        splitSeed: 1,
-        selectedFeatures: null,
-        addNoise: false,
-        noiseCount: 10,
-        noiseSeed: 1,
+        scatterTrend: false,
+        scatterCorrelation: false,
+        splitTarget: "",
+        trainPercent: "",
+        splitSeed: "",
+        selectedFeatures: [],
         classifierModelId: "",
-        classifierSet: "validation",
-        classifierThreshold: 100
+        classifierSet: "",
+        classifierThreshold: ""
       },
       splitConfig: null,
       models: []
@@ -141,16 +121,14 @@
   function normalizeUiAfterDatasetLoad() {
     if (!dataset) return;
     const numeric = dataset.numericColumns;
-    if (!numeric.includes(state.ui.scatterY)) state.ui.scatterY = numeric.includes(TARGET_DEFAULT) ? TARGET_DEFAULT : numeric[0] || "";
-    if (!numeric.includes(state.ui.scatterX)) state.ui.scatterX = defaultScatterX();
-    if (!numeric.includes(state.ui.splitTarget)) state.ui.splitTarget = numeric.includes(TARGET_DEFAULT) ? TARGET_DEFAULT : numeric[0] || "";
+    if (state.ui.scatterY && !numeric.includes(state.ui.scatterY)) state.ui.scatterY = "";
+    if (state.ui.scatterX && !numeric.includes(state.ui.scatterX)) state.ui.scatterX = "";
+    if (state.ui.splitTarget && !numeric.includes(state.ui.splitTarget)) state.ui.splitTarget = "";
+    if (state.ui.filterColumn && !dataset.columnNames.includes(state.ui.filterColumn)) state.ui.filterColumn = "";
+    if (state.ui.scatterColor && state.ui.scatterColor !== "none" && !colorByColumns().includes(state.ui.scatterColor)) state.ui.scatterColor = "none";
     const possible = possibleFeatures();
-    if (!Array.isArray(state.ui.selectedFeatures) || !state.ui.selectedFeatures.length) {
-      state.ui.selectedFeatures = defaultFeatureSelection();
-    } else {
-      state.ui.selectedFeatures = state.ui.selectedFeatures.filter((feature) => possible.includes(feature));
-      if (!state.ui.selectedFeatures.length) state.ui.selectedFeatures = defaultFeatureSelection();
-    }
+    if (!Array.isArray(state.ui.selectedFeatures)) state.ui.selectedFeatures = [];
+    state.ui.selectedFeatures = state.ui.selectedFeatures.filter((feature) => possible.includes(feature));
   }
 
   function activeId() {
@@ -203,9 +181,6 @@
 
   function renderDataInput() {
     const root = renderShell("Data Input");
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
-
     const controls = document.createElement("div");
     controls.innerHTML = '<label for="ml-csv-input">CSV dataset</label><div class="file-drop-zone" data-csv-drop-zone tabindex="0"><strong>Drop CSV file here</strong><span>or click to choose a file</span><input data-csv-file-input type="file" accept=".csv,text/csv,text/plain"></div><textarea id="ml-csv-input" spellcheck="false"></textarea><div class="buttons"><button type="button" data-load-dataset>Load dataset</button></div><div class="message" data-input-message role="status" aria-live="polite"></div>';
     const textarea = controls.querySelector("textarea");
@@ -266,10 +241,10 @@
       renderTable(output, "Preview", dataset.columnNames, dataset.rows.slice(0, 8).map((row) => dataset.columnNames.map((column) => row[column])));
     }
 
-    grid.appendChild(controls);
-    grid.appendChild(output);
-    root.appendChild(grid);
+    root.appendChild(controls);
+    root.appendChild(output);
   }
+
 
   function renderRequiredStatus(parent) {
     const missing = REQUIRED_COLUMNS.filter((column) => !dataset.requiredColumnStatus[column]);
@@ -281,49 +256,70 @@
     const root = renderShell("Summary and Filtering");
     if (!requireDataset(root)) return;
 
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="settings two"><div><label for="ml-filter-class">SRG1_class</label><select id="ml-filter-class"></select></div><div><label for="ml-filter-column">Numeric filter</label><select id="ml-filter-column"></select></div><div><label for="ml-filter-min">Minimum</label><input id="ml-filter-min" type="number" step="any"></div><div><label for="ml-filter-max">Maximum</label><input id="ml-filter-max" type="number" step="any"></div></div>';
-    const classSelect = controls.querySelector("#ml-filter-class");
-    fillSelect(classSelect, ["All"].concat(genotypeValues()), state.ui.filterClass);
+    const selectedColumn = dataset.columnNames.includes(state.ui.filterColumn) ? state.ui.filterColumn : "";
+    const isNumericFilter = selectedColumn && dataset.numericColumns.includes(selectedColumn);
+    const isCategoricalFilter = selectedColumn && !isNumericFilter;
+    controls.innerHTML = '<div class="settings three"><div><label for="ml-filter-column">Filter column</label><select id="ml-filter-column"></select></div><div data-filter-extra-a></div><div data-filter-extra-b></div></div>';
     const columnSelect = controls.querySelector("#ml-filter-column");
-    fillSelect(columnSelect, [""].concat(dataset.numericColumns), state.ui.filterColumn, "None");
-    controls.querySelector("#ml-filter-min").value = state.ui.filterMin;
-    controls.querySelector("#ml-filter-max").value = state.ui.filterMax;
-    classSelect.addEventListener("change", () => { state.ui.filterClass = classSelect.value; renderSummaryFiltering(); });
-    columnSelect.addEventListener("change", () => { state.ui.filterColumn = columnSelect.value; renderSummaryFiltering(); });
-    controls.querySelector("#ml-filter-min").addEventListener("change", (event) => { state.ui.filterMin = event.target.value; renderSummaryFiltering(); });
-    controls.querySelector("#ml-filter-max").addEventListener("change", (event) => { state.ui.filterMax = event.target.value; renderSummaryFiltering(); });
+    fillSelect(columnSelect, [""].concat(dataset.columnNames), selectedColumn, "None");
+    const extraA = controls.querySelector("[data-filter-extra-a]");
+    const extraB = controls.querySelector("[data-filter-extra-b]");
+
+    if (isNumericFilter) {
+      extraA.innerHTML = '<label for="ml-filter-min">Minimum</label><input id="ml-filter-min" type="number" step="any">';
+      extraB.innerHTML = '<label for="ml-filter-max">Maximum</label><input id="ml-filter-max" type="number" step="any">';
+      extraA.querySelector("input").value = state.ui.filterMin;
+      extraB.querySelector("input").value = state.ui.filterMax;
+      extraA.querySelector("input").addEventListener("change", (event) => { state.ui.filterMin = event.target.value; renderSummaryFiltering(); });
+      extraB.querySelector("input").addEventListener("change", (event) => { state.ui.filterMax = event.target.value; renderSummaryFiltering(); });
+    } else if (isCategoricalFilter) {
+      extraA.innerHTML = '<label for="ml-filter-value">Filter value</label><select id="ml-filter-value"></select>';
+      const valueOptions = ["All"].concat(uniqueColumnValues(selectedColumn));
+      if (!valueOptions.includes(state.ui.filterValue)) state.ui.filterValue = "All";
+      fillSelect(extraA.querySelector("select"), valueOptions, state.ui.filterValue || "All");
+      extraA.querySelector("select").addEventListener("change", (event) => { state.ui.filterValue = event.target.value; renderSummaryFiltering(); });
+      extraB.innerHTML = '<div class="tool-note">Categorical filter</div>';
+    } else {
+      extraA.innerHTML = '<div class="tool-note">No filter selected</div>';
+    }
+
+    columnSelect.addEventListener("change", () => {
+      state.ui.filterColumn = columnSelect.value;
+      state.ui.filterValue = "All";
+      state.ui.filterMin = "";
+      state.ui.filterMax = "";
+      renderSummaryFiltering();
+    });
 
     const output = document.createElement("div");
     const filtered = filteredRows();
-    const genotypeCounts = countBy(filtered, "SRG1_class");
     addMetrics(output, [
       ["Full dataset", dataset.rows.length],
       ["Filtered dataset", filtered.length],
-      ["SRG1_class B", genotypeCounts.B || 0]
+      ["Filter column", selectedColumn || "None"]
     ]);
-    renderTable(output, "SRG1_class Counts", ["Class", "Count"], Object.keys(genotypeCounts).sort().map((key) => [key, genotypeCounts[key]]));
+    summaryCategoricalColumns().forEach((column) => {
+      const counts = countBy(filtered, column);
+      renderTable(output, column + " Counts", [column, "Count"], Object.keys(counts).sort().map((key) => [key, counts[key]]));
+    });
     renderTable(output, "Numeric Summary", ["Column", "Mean", "Std. dev.", "Min", "Max"], numericSummary(filtered));
     renderTable(output, "Filtered Preview", dataset.columnNames, filtered.slice(0, 10).map((row) => dataset.columnNames.map((column) => row[column])));
 
-    grid.appendChild(controls);
-    grid.appendChild(output);
-    root.appendChild(grid);
+    root.appendChild(controls);
+    root.appendChild(output);
   }
+
 
   function renderScatterplot() {
     const root = renderShell("Scatterplot");
     if (!requireDataset(root)) return;
 
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="settings two"><div><label for="ml-scatter-x">X-axis</label><select id="ml-scatter-x"></select></div><div><label for="ml-scatter-y">Y-axis</label><select id="ml-scatter-y"></select></div><div><label for="ml-scatter-color">Color by</label><select id="ml-scatter-color"></select></div></div><div class="ml-check-row"><label><input id="ml-scatter-trend" type="checkbox"> Show trend line</label><label><input id="ml-scatter-correlation" type="checkbox"> Show correlation</label></div>';
-    fillSelect(controls.querySelector("#ml-scatter-x"), dataset.numericColumns, state.ui.scatterX);
-    fillSelect(controls.querySelector("#ml-scatter-y"), dataset.numericColumns, state.ui.scatterY);
-    fillSelect(controls.querySelector("#ml-scatter-color"), ["none", "SRG1_class", CAMERA_COLUMN].filter((value) => value === "none" || dataset.columnNames.includes(value)), state.ui.scatterColor);
+    controls.innerHTML = '<div class="settings three"><div><label for="ml-scatter-x">X-axis</label><select id="ml-scatter-x"></select></div><div><label for="ml-scatter-y">Y-axis</label><select id="ml-scatter-y"></select></div><div><label for="ml-scatter-color">Color by</label><select id="ml-scatter-color"></select></div></div><div class="ml-check-row"><label><input id="ml-scatter-trend" type="checkbox"> Show trend line</label><label><input id="ml-scatter-correlation" type="checkbox"> Show correlation</label></div>';
+    fillSelect(controls.querySelector("#ml-scatter-x"), [""].concat(dataset.numericColumns), state.ui.scatterX, "Choose column");
+    fillSelect(controls.querySelector("#ml-scatter-y"), [""].concat(dataset.numericColumns), state.ui.scatterY, "Choose column");
+    fillSelect(controls.querySelector("#ml-scatter-color"), ["none"].concat(colorByColumns()), state.ui.scatterColor || "none");
     controls.querySelector("#ml-scatter-trend").checked = !!state.ui.scatterTrend;
     controls.querySelector("#ml-scatter-correlation").checked = !!state.ui.scatterCorrelation;
     controls.querySelectorAll("select,input").forEach((control) => {
@@ -338,58 +334,63 @@
     });
 
     const output = document.createElement("div");
-    const x = state.ui.scatterX || defaultScatterX();
-    const y = state.ui.scatterY || TARGET_DEFAULT;
-    const points = dataset.rows.map((row) => ({ row, x: numberValue(row, x), y: numberValue(row, y) })).filter((point) => isFinite(point.x) && isFinite(point.y));
-    const xs = points.map((point) => point.x);
-    const ys = points.map((point) => point.y);
-    const r = pearson(xs, ys);
-    const relationship = relationshipText(r);
-    addMetrics(output, [
-      ["X-axis", x],
-      ["Y-axis", y],
-      ["Pearson r", formatNumber(r, 4)],
-      ["Relationship", relationship]
-    ]);
-    const plot = document.createElement("div");
-    plot.className = "ml-plot-wrap";
-    plot.appendChild(makeScatterSvg(points, x, y, state.ui.scatterColor, !!state.ui.scatterTrend));
-    output.appendChild(plot);
-    if (state.ui.scatterTrend) {
-      const fit = simpleLinearFit(xs, ys);
-      addOutputBlock(output, "Simple Trend", "R^2 = " + formatNumber(fit.r2, 4) + "\nSlope = " + formatNumber(fit.slope, 4) + "\nIntercept = " + formatNumber(fit.intercept, 4));
-    } else if (state.ui.scatterCorrelation) {
-      addOutputBlock(output, "Correlation", "r = " + formatNumber(r, 4) + "\n" + relationship);
+    const x = state.ui.scatterX;
+    const y = state.ui.scatterY;
+    if (!x || !y) {
+      addMessage(output, "Choose X-axis and Y-axis columns.", "error");
+    } else {
+      const points = dataset.rows.map((row) => ({ row, x: numberValue(row, x), y: numberValue(row, y) })).filter((point) => isFinite(point.x) && isFinite(point.y));
+      const xs = points.map((point) => point.x);
+      const ys = points.map((point) => point.y);
+      const r = pearson(xs, ys);
+      const relationship = relationshipText(r);
+      addMetrics(output, [
+        ["X-axis", x],
+        ["Y-axis", y],
+        ["Pearson r", formatNumber(r, 4)],
+        ["Relationship", relationship]
+      ]);
+      const plot = document.createElement("div");
+      plot.className = "ml-plot-wrap";
+      plot.appendChild(makeScatterSvg(points, x, y, state.ui.scatterColor, !!state.ui.scatterTrend));
+      output.appendChild(plot);
+      if (state.ui.scatterTrend) {
+        const fit = simpleLinearFit(xs, ys);
+        addOutputBlock(output, "Simple Trend", "R^2 = " + formatNumber(fit.r2, 4) + "\nSlope = " + formatNumber(fit.slope, 4) + "\nIntercept = " + formatNumber(fit.intercept, 4));
+      } else if (state.ui.scatterCorrelation) {
+        addOutputBlock(output, "Correlation", "r = " + formatNumber(r, 4) + "\n" + relationship);
+      }
     }
 
-    grid.appendChild(controls);
-    grid.appendChild(output);
-    root.appendChild(grid);
+    root.appendChild(controls);
+    root.appendChild(output);
   }
+
 
   function renderDatasetSplitter() {
     const root = renderShell("Dataset Splitter");
     if (!requireDataset(root)) return;
 
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="settings three"><div><label for="ml-split-target">Target</label><select id="ml-split-target"></select></div><div><label for="ml-train-percent">Train %</label><input id="ml-train-percent" type="number" min="10" max="90" step="1"></div><div><label for="ml-split-seed">Random seed</label><input id="ml-split-seed" type="number" step="1"></div></div><div class="buttons"><button type="button" class="secondary" data-preset="bio">Select biological</button><button type="button" class="secondary" data-preset="exclude-meta">Exclude metadata</button><button type="button" class="secondary" data-preset="include-meta">Include metadata</button><button type="button" class="secondary" data-preset="exclude-bacterial">Exclude bacterial</button></div><h3>Input Features</h3><div class="feature-checklist" data-feature-list></div><div class="buttons"><button type="button" data-create-split>Create split</button></div><div class="message" data-split-message role="status" aria-live="polite"></div>';
+    controls.innerHTML = '<div class="settings three"><div><label for="ml-split-target">Target</label><select id="ml-split-target"></select></div><div><label for="ml-train-percent">Train %</label><input id="ml-train-percent" type="number" min="10" max="90" step="1"></div><div><label for="ml-split-seed">Random seed</label><input id="ml-split-seed" type="number" step="1"></div></div><h3>Input Features</h3><div class="feature-checklist" data-feature-list></div><div class="buttons"><button type="button" data-create-split>Create split</button></div><div class="message" data-split-message role="status" aria-live="polite"></div>';
     const targetSelect = controls.querySelector("#ml-split-target");
-    fillSelect(targetSelect, dataset.numericColumns, state.ui.splitTarget);
+    fillSelect(targetSelect, [""].concat(dataset.numericColumns), state.ui.splitTarget, "Choose target");
     controls.querySelector("#ml-train-percent").value = state.ui.trainPercent;
     controls.querySelector("#ml-split-seed").value = state.ui.splitSeed;
     renderFeatureChecklist(controls.querySelector("[data-feature-list]"));
-    targetSelect.addEventListener("change", () => { state.ui.splitTarget = targetSelect.value; state.ui.selectedFeatures = state.ui.selectedFeatures.filter((feature) => feature !== targetSelect.value); renderDatasetSplitter(); });
+    targetSelect.addEventListener("change", () => {
+      state.ui.splitTarget = targetSelect.value;
+      state.ui.selectedFeatures = state.ui.selectedFeatures.filter((feature) => feature !== targetSelect.value);
+      renderDatasetSplitter();
+    });
     controls.querySelector("#ml-train-percent").addEventListener("change", (event) => { state.ui.trainPercent = event.target.value; });
     controls.querySelector("#ml-split-seed").addEventListener("change", (event) => { state.ui.splitSeed = event.target.value; });
-    controls.querySelectorAll("[data-preset]").forEach((button) => button.addEventListener("click", () => applyFeaturePreset(button.dataset.preset, controls)));
     controls.querySelectorAll("[data-feature]").forEach((box) => box.addEventListener("change", () => collectSelectedFeatures(controls)));
     controls.querySelector("[data-create-split]").addEventListener("click", () => {
       collectSelectedFeatures(controls);
       state.ui.splitTarget = targetSelect.value;
-      state.ui.trainPercent = Number(controls.querySelector("#ml-train-percent").value) || 70;
-      state.ui.splitSeed = Number(controls.querySelector("#ml-split-seed").value) || 1;
+      state.ui.trainPercent = controls.querySelector("#ml-train-percent").value;
+      state.ui.splitSeed = controls.querySelector("#ml-split-seed").value;
       try {
         state.splitConfig = {
           target: state.ui.splitTarget,
@@ -425,37 +426,22 @@
       renderTable(output, "Validation Preview", previewHeaders(split), previewRows(split.validationRows.slice(0, 6), split));
     }
 
-    grid.appendChild(controls);
-    grid.appendChild(output);
-    root.appendChild(grid);
+    root.appendChild(controls);
+    root.appendChild(output);
   }
+
 
   function renderRegressionTrainer() {
     const root = renderShell("Regression Trainer");
     if (!requireDataset(root)) return;
     if (!requireSplit(root)) return;
 
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="ml-check-row"><label><input id="ml-add-noise" type="checkbox"> Add random noise features</label></div><div class="settings two"><div><label for="ml-noise-count">Noise features</label><input id="ml-noise-count" type="number" min="1" max="100" step="1"></div><div><label for="ml-noise-seed">Noise seed</label><input id="ml-noise-seed" type="number" step="1"></div></div><div class="buttons"><button type="button" data-train-model>Train regression model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
-    controls.querySelector("#ml-add-noise").checked = !!state.ui.addNoise;
-    controls.querySelector("#ml-noise-count").value = state.ui.noiseCount;
-    controls.querySelector("#ml-noise-seed").value = state.ui.noiseSeed;
-    controls.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
-      state.ui.addNoise = controls.querySelector("#ml-add-noise").checked;
-      state.ui.noiseCount = Number(controls.querySelector("#ml-noise-count").value) || 10;
-      state.ui.noiseSeed = Number(controls.querySelector("#ml-noise-seed").value) || 1;
-      saveState();
-    }));
+    controls.innerHTML = '<div class="buttons"><button type="button" data-train-model>Train regression model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
     controls.querySelector("[data-train-model]").addEventListener("click", () => {
-      state.ui.addNoise = controls.querySelector("#ml-add-noise").checked;
-      state.ui.noiseCount = Number(controls.querySelector("#ml-noise-count").value) || 10;
-      state.ui.noiseSeed = Number(controls.querySelector("#ml-noise-seed").value) || 1;
       try {
         const model = trainCurrentModel();
         state.models.push(model);
-        state.ui.classifierModelId = model.id;
         saveState();
         renderRegressionTrainer();
       } catch (err) {
@@ -468,10 +454,11 @@
     else renderModelDetails(output, latestModel());
     renderModelHistory(output);
 
-    grid.appendChild(controls);
-    grid.appendChild(output);
-    root.appendChild(grid);
+    root.appendChild(controls);
+    root.appendChild(output);
   }
+
+
 
   function renderClassifierEvaluator() {
     const root = renderShell("Classifier Evaluator");
@@ -482,49 +469,51 @@
       return;
     }
 
-    if (!state.ui.classifierModelId || !findModel(state.ui.classifierModelId)) state.ui.classifierModelId = latestModel().id;
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
+    if (state.ui.classifierModelId && !findModel(state.ui.classifierModelId)) state.ui.classifierModelId = "";
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="settings three"><div><label for="ml-classifier-model">Model</label><select id="ml-classifier-model"></select></div><div><label for="ml-classifier-set">Dataset</label><select id="ml-classifier-set"><option value="validation">Validation</option><option value="training">Training</option></select></div><div><label for="ml-classifier-threshold">Threshold</label><input id="ml-classifier-threshold" type="number" step="any"></div></div>';
+    controls.innerHTML = '<div class="settings three"><div><label for="ml-classifier-model">Model</label><select id="ml-classifier-model"></select></div><div><label for="ml-classifier-set">Dataset</label><select id="ml-classifier-set"><option value="">Choose dataset</option><option value="validation">Validation</option><option value="training">Training</option></select></div><div><label for="ml-classifier-threshold">Threshold</label><input id="ml-classifier-threshold" type="number" step="any"></div></div>';
     const modelSelect = controls.querySelector("#ml-classifier-model");
-    fillSelect(modelSelect, state.models.map((model) => model.id), state.ui.classifierModelId);
+    fillSelect(modelSelect, [""].concat(state.models.map((model) => model.id)), state.ui.classifierModelId, "Choose model");
     controls.querySelector("#ml-classifier-set").value = state.ui.classifierSet;
     controls.querySelector("#ml-classifier-threshold").value = state.ui.classifierThreshold;
     controls.querySelectorAll("select,input").forEach((control) => control.addEventListener("change", () => {
       state.ui.classifierModelId = modelSelect.value;
       state.ui.classifierSet = controls.querySelector("#ml-classifier-set").value;
-      state.ui.classifierThreshold = Number(controls.querySelector("#ml-classifier-threshold").value) || 100;
+      state.ui.classifierThreshold = controls.querySelector("#ml-classifier-threshold").value;
       renderClassifierEvaluator();
     }));
 
     const output = document.createElement("div");
     const model = findModel(state.ui.classifierModelId);
-    const evalSet = state.ui.classifierSet === "training" ? "training" : "validation";
-    const threshold = Number(state.ui.classifierThreshold) || 100;
-    const evaluation = evaluateClassifier(model, evalSet, threshold);
-    addMetrics(output, [
-      ["Threshold", threshold],
-      ["Positive class", POSITIVE_CLASS],
-      ["Accuracy", formatPercent(evaluation.accuracy)],
-      ["Sensitivity", formatPercent(evaluation.sensitivity)],
-      ["Specificity", formatPercent(evaluation.specificity)]
-    ]);
-    addOutputBlock(output, "Definition", "true high-biomass: true " + model.target + " > " + threshold + "\npredicted high-biomass: predicted " + model.target + " > " + threshold + "\nThe model predicts biomass, not probability.");
-    renderTable(output, "Confusion Matrix", ["", "Predicted high-biomass", "Predicted low-biomass"], [
-      ["True high-biomass", evaluation.tp, evaluation.fn],
-      ["True low-biomass", evaluation.fp, evaluation.tn]
-    ]);
-    renderTable(output, "Threshold Comparison", ["Threshold", "Accuracy", "Sensitivity", "Specificity", "Predicted high-biomass"], [80, 100, 120].map((value) => {
-      const e = evaluateClassifier(model, evalSet, value);
-      return [value, formatPercent(e.accuracy), formatPercent(e.sensitivity), formatPercent(e.specificity), e.predictedHigh];
-    }));
-    renderTable(output, "Misclassified Samples", ["Row", "True biomass", "Predicted biomass", "True class", "Predicted class"], evaluation.misclassified.slice(0, 25).map((item) => [item.rowNumber, formatNumber(item.actual, 3), formatNumber(item.predicted, 3), item.actualClass, item.predictedClass]));
+    const evalSet = state.ui.classifierSet;
+    const threshold = Number(state.ui.classifierThreshold);
+    if (!model || !evalSet || state.ui.classifierThreshold === "" || !Number.isFinite(threshold)) {
+      addMessage(output, "Choose a model, dataset, and numeric threshold.", "error");
+    } else {
+      const evaluation = evaluateClassifier(model, evalSet, threshold);
+      addMetrics(output, [
+        ["Threshold", threshold],
+        ["Positive class", POSITIVE_CLASS],
+        ["Accuracy", formatPercent(evaluation.accuracy)],
+        ["Sensitivity", formatPercent(evaluation.sensitivity)],
+        ["Specificity", formatPercent(evaluation.specificity)]
+      ]);
+      addOutputBlock(output, "Definition", "true high-biomass: true " + model.target + " > " + threshold + "\npredicted high-biomass: predicted " + model.target + " > " + threshold + "\nThe model predicts biomass, not probability.");
+      renderTable(output, "Confusion Matrix", ["", "Predicted high-biomass", "Predicted low-biomass"], [
+        ["True high-biomass", evaluation.tp, evaluation.fn],
+        ["True low-biomass", evaluation.fp, evaluation.tn]
+      ]);
+      renderTable(output, "Threshold Comparison", ["Threshold", "Accuracy", "Sensitivity", "Specificity", "Predicted high-biomass"], thresholdComparisonValues(threshold).map((value) => {
+        const e = evaluateClassifier(model, evalSet, value);
+        return [value, formatPercent(e.accuracy), formatPercent(e.sensitivity), formatPercent(e.specificity), e.predictedHigh];
+      }));
+      renderTable(output, "Misclassified Samples", ["Row", "True biomass", "Predicted biomass", "True class", "Predicted class"], evaluation.misclassified.slice(0, 25).map((item) => [item.rowNumber, formatNumber(item.actual, 3), formatNumber(item.predicted, 3), item.actualClass, item.predictedClass]));
+    }
 
-    grid.appendChild(controls);
-    grid.appendChild(output);
-    root.appendChild(grid);
+    root.appendChild(controls);
+    root.appendChild(output);
   }
+
 
   function renderClearData() {
     const root = renderShell("Clear Data");
@@ -635,32 +624,29 @@
     return Number(row[column]);
   }
 
-  function genotypeValues() {
-    if (!dataset || !dataset.columnNames.includes("SRG1_class")) return [];
-    return Array.from(new Set(dataset.rows.map((row) => row.SRG1_class).filter(Boolean))).sort();
-  }
 
-  function defaultScatterX() {
-    if (!dataset) return "";
-    if (dataset.numericColumns.includes("primary_root_length")) return "primary_root_length";
-    return dataset.numericColumns.find((column) => column !== TARGET_DEFAULT) || dataset.numericColumns[0] || "";
-  }
+
+
 
   function filteredRows() {
     let rows = dataset.rows.slice();
-    if (state.ui.filterClass && state.ui.filterClass !== "All") rows = rows.filter((row) => row.SRG1_class === state.ui.filterClass);
-    if (state.ui.filterColumn) {
+    const column = dataset.columnNames.includes(state.ui.filterColumn) ? state.ui.filterColumn : "";
+    if (!column) return rows;
+    if (dataset.numericColumns.includes(column)) {
       const min = state.ui.filterMin === "" ? null : Number(state.ui.filterMin);
       const max = state.ui.filterMax === "" ? null : Number(state.ui.filterMax);
       rows = rows.filter((row) => {
-        const value = numberValue(row, state.ui.filterColumn);
+        const value = numberValue(row, column);
         if (min !== null && value < min) return false;
         if (max !== null && value > max) return false;
         return true;
       });
+    } else if (state.ui.filterValue && state.ui.filterValue !== "All") {
+      rows = rows.filter((row) => row[column] === state.ui.filterValue);
     }
     return rows;
   }
+
 
   function countBy(rows, column) {
     const counts = {};
@@ -669,6 +655,23 @@
       counts[key] = (counts[key] || 0) + 1;
     });
     return counts;
+  }
+
+  function uniqueColumnValues(column) {
+    return Array.from(new Set(dataset.rows.map((row) => row[column]).filter((value) => value !== ""))).sort();
+  }
+
+  function summaryCategoricalColumns() {
+    return dataset.categoricalColumns.filter((column) => column !== "seedling_id" && uniqueColumnValues(column).length <= 30);
+  }
+
+  function colorByColumns() {
+    return dataset.columnNames.filter((column) => column !== "seedling_id" && uniqueColumnValues(column).length > 1 && uniqueColumnValues(column).length <= 30);
+  }
+
+  function thresholdComparisonValues(threshold) {
+    const values = [threshold - 20, threshold, threshold + 20].filter((value) => Number.isFinite(value));
+    return Array.from(new Set(values)).sort((a, b) => a - b);
   }
 
   function numericSummary(rows) {
@@ -680,20 +683,28 @@
 
   function possibleFeatures() {
     if (!dataset) return [];
-    const ordered = BIOLOGICAL_FEATURES.concat(METADATA_FEATURES);
-    const valid = ordered.filter((feature) => feature !== state.ui.splitTarget && dataset.columnNames.includes(feature) && (dataset.numericColumns.includes(feature) || feature === "SRG1_class"));
-    const extra = dataset.columnNames.filter((column) => column !== "seedling_id" && column !== state.ui.splitTarget && !valid.includes(column) && (dataset.numericColumns.includes(column) || column === "SRG1_class"));
-    return valid.concat(extra);
+    const target = state.ui.splitTarget;
+    return dataset.columnNames.filter((column) => {
+      if (column === target) return false;
+      if (dataset.numericColumns.includes(column)) return true;
+      return column !== "seedling_id" && uniqueColumnValues(column).length > 1 && uniqueColumnValues(column).length <= 30;
+    });
   }
 
-  function defaultFeatureSelection() {
-    if (!dataset) return [];
-    return BIOLOGICAL_FEATURES.filter((feature) => possibleFeatures().includes(feature));
-  }
+
+
 
   function renderFeatureChecklist(parent) {
-    const selected = new Set(state.ui.selectedFeatures || defaultFeatureSelection());
-    possibleFeatures().forEach((feature) => {
+    const selected = new Set(Array.isArray(state.ui.selectedFeatures) ? state.ui.selectedFeatures : []);
+    const features = possibleFeatures();
+    if (!features.length) {
+      const note = document.createElement("div");
+      note.className = "tool-note";
+      note.textContent = "No eligible input features for the selected target.";
+      parent.appendChild(note);
+      return;
+    }
+    features.forEach((feature) => {
       const label = document.createElement("label");
       label.className = "feature-option";
       const input = document.createElement("input");
@@ -708,55 +719,51 @@
     });
   }
 
+
   function featureTag(feature) {
-    if (METADATA_FEATURES.includes(feature)) return " (metadata)";
-    if (BACTERIAL_FEATURES.includes(feature)) return " (bacterial)";
-    if (feature === "SRG1_class") return " (one-hot)";
+    if (dataset && !dataset.numericColumns.includes(feature)) return " (one-hot)";
     return "";
   }
+
 
   function collectSelectedFeatures(scope) {
     state.ui.selectedFeatures = Array.from(scope.querySelectorAll("[data-feature]:checked")).map((input) => input.dataset.feature);
   }
 
-  function applyFeaturePreset(preset, scope) {
-    collectSelectedFeatures(scope);
-    if (preset === "bio") state.ui.selectedFeatures = defaultFeatureSelection();
-    if (preset === "exclude-meta") state.ui.selectedFeatures = state.ui.selectedFeatures.filter((feature) => !METADATA_FEATURES.includes(feature));
-    if (preset === "include-meta") state.ui.selectedFeatures = Array.from(new Set(state.ui.selectedFeatures.concat(METADATA_FEATURES.filter((feature) => possibleFeatures().includes(feature)))));
-    if (preset === "exclude-bacterial") state.ui.selectedFeatures = state.ui.selectedFeatures.filter((feature) => !BACTERIAL_FEATURES.includes(feature));
-    renderDatasetSplitter();
-  }
+
 
   function splitWarnings(features) {
     const warnings = [];
-    if (features.some((feature) => METADATA_FEATURES.includes(feature))) warnings.push("Metadata features are included.");
     if (features.length < 2) warnings.push("Very few input features are selected.");
-    if (features.includes(TARGET_DEFAULT)) warnings.push("biomass_sum cannot be used as an input feature.");
     return warnings;
   }
 
+
   function createSplitFromConfig(config) {
     if (!dataset) throw new Error("Load a dataset first.");
-    const target = config.target || TARGET_DEFAULT;
+    const target = config.target || "";
+    if (!target) throw new Error("Choose a target column.");
     if (!dataset.numericColumns.includes(target)) throw new Error("Target must be a numeric column.");
+    const percent = Number(config.trainPercent);
+    if (!Number.isFinite(percent) || percent < 10 || percent > 90) throw new Error("Enter a train percentage between 10 and 90.");
+    if (config.seed === "" || config.seed === null || config.seed === undefined || !Number.isFinite(Number(config.seed))) throw new Error("Enter a numeric random seed.");
     const features = (config.selectedFeatures || []).filter((feature) => feature !== target && possibleFeatures().includes(feature));
     if (!features.length) throw new Error("Select at least one input feature.");
-    if (features.includes(TARGET_DEFAULT)) throw new Error("biomass_sum cannot be selected as an input feature.");
-    const percent = clamp(Number(config.trainPercent) || 70, 10, 90);
-    const shuffled = shuffledIndices(dataset.rows.length, Number(config.seed) || 1);
+    const shuffled = shuffledIndices(dataset.rows.length, Number(config.seed));
     const trainCount = clamp(Math.round(dataset.rows.length * percent / 100), 1, dataset.rows.length - 1);
     const trainRows = shuffled.slice(0, trainCount).map((index) => dataset.rows[index]);
     const validationRows = shuffled.slice(trainCount).map((index) => dataset.rows[index]);
     const categories = {};
-    if (features.includes("SRG1_class")) categories.SRG1_class = genotypeValues();
+    features.forEach((feature) => {
+      if (!dataset.numericColumns.includes(feature)) categories[feature] = uniqueColumnValues(feature);
+    });
     const trainEncoded = encodeRows(trainRows, features, categories);
     const validationEncoded = encodeRows(validationRows, features, categories);
     return {
       target,
       selectedFeatures: features,
       trainPercent: percent,
-      seed: Number(config.seed) || 1,
+      seed: Number(config.seed),
       trainRows,
       validationRows,
       categories,
@@ -768,11 +775,12 @@
     };
   }
 
+
   function encodeRows(rows, features, categories) {
     const featureNames = [];
     features.forEach((feature) => {
-      if (feature === "SRG1_class") {
-        (categories.SRG1_class || []).forEach((category) => featureNames.push("SRG1_" + sanitizeName(category)));
+      if (categories[feature]) {
+        categories[feature].forEach((category) => featureNames.push(feature + "_" + sanitizeName(category)));
       } else {
         featureNames.push(feature);
       }
@@ -780,8 +788,8 @@
     const matrix = rows.map((row) => {
       const values = [];
       features.forEach((feature) => {
-        if (feature === "SRG1_class") {
-          (categories.SRG1_class || []).forEach((category) => values.push(row.SRG1_class === category ? 1 : 0));
+        if (categories[feature]) {
+          categories[feature].forEach((category) => values.push(row[feature] === category ? 1 : 0));
         } else {
           values.push(numberValue(row, feature));
         }
@@ -790,6 +798,7 @@
     });
     return { featureNames, matrix };
   }
+
 
   function sanitizeName(value) {
     return String(value || "blank").replace(/[^A-Za-z0-9]+/g, "_");
@@ -809,17 +818,9 @@
 
   function trainCurrentModel() {
     if (!split) throw new Error("Create a split first.");
-    let trainX = split.trainX.map((row) => row.slice());
-    let validationX = split.validationX.map((row) => row.slice());
-    let featureNames = split.featureNames.slice();
-    const addNoise = !!state.ui.addNoise;
-    const noiseCount = clamp(Number(state.ui.noiseCount) || 10, 1, 100);
-    if (addNoise) {
-      const noisy = addNoiseFeatures(trainX, validationX, noiseCount, Number(state.ui.noiseSeed) || 1);
-      trainX = noisy.trainX;
-      validationX = noisy.validationX;
-      featureNames = featureNames.concat(noisy.names);
-    }
+    const trainX = split.trainX.map((row) => row.slice());
+    const validationX = split.validationX.map((row) => row.slice());
+    const featureNames = split.featureNames.slice();
     const fitted = fitLinearRegression(trainX, split.trainY);
     const trainPred = predictRows(trainX, fitted);
     const validationPred = predictRows(validationX, fitted);
@@ -838,9 +839,6 @@
       validationActual: split.validationY.slice(),
       trainRowNumbers: split.trainRows.map((row) => row.__rowNumber),
       validationRowNumbers: split.validationRows.map((row) => row.__rowNumber),
-      metadataIncluded: split.selectedFeatures.some((feature) => METADATA_FEATURES.includes(feature)),
-      bacterialIncluded: split.selectedFeatures.some((feature) => BACTERIAL_FEATURES.includes(feature)),
-      noiseIncluded: addNoise,
       metrics: {
         trainR2: rSquared(split.trainY, trainPred),
         validationR2: rSquared(split.validationY, validationPred),
@@ -850,16 +848,9 @@
     };
   }
 
-  function addNoiseFeatures(trainX, validationX, count, seed) {
-    const rng = seededRandom(seed);
-    const names = Array.from({ length: count }, (_, index) => "noise_" + (index + 1));
-    const add = (matrix) => matrix.map((row) => {
-      const values = row.slice();
-      for (let i = 0; i < count; i++) values.push(randomNormal(rng));
-      return values;
-    });
-    return { trainX: add(trainX), validationX: add(validationX), names };
-  }
+
+
+
 
   function fitLinearRegression(matrix, y) {
     if (!matrix.length) throw new Error("No training rows are available.");
@@ -929,18 +920,17 @@
 
   function renderModelHistory(parent) {
     if (!state.models.length) return;
-    renderTable(parent, "Model History", ["Model", "Features", "Metadata", "Bacterial", "Noise", "Train R^2", "Validation R^2", "Train RMSE", "Validation RMSE"], state.models.map((model) => [
+    renderTable(parent, "Model History", ["Model", "Features", "Train R^2", "Validation R^2", "Train RMSE", "Validation RMSE"], state.models.map((model) => [
       model.id,
       model.selectedFeatures.join(", "),
-      model.metadataIncluded ? "yes" : "no",
-      model.bacterialIncluded ? "yes" : "no",
-      model.noiseIncluded ? "yes" : "no",
       formatNumber(model.metrics.trainR2, 4),
       formatNumber(model.metrics.validationR2, 4),
       formatNumber(model.metrics.trainRmse, 4),
       formatNumber(model.metrics.validationRmse, 4)
     ]));
   }
+
+
 
   function latestModel() {
     return state.models[state.models.length - 1];
@@ -1307,11 +1297,7 @@
     };
   }
 
-  function randomNormal(rng) {
-    const u1 = Math.max(rng(), 1e-12);
-    const u2 = rng();
-    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  }
+
 
   buttons.forEach((button) => {
     button.addEventListener("click", () => setActiveTool(button.dataset.mlTool));
