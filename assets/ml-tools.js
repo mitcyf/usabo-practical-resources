@@ -1014,7 +1014,7 @@
     const table = document.createElement("table");
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
-    ["Model", "Features", "Train R^2", "Validation R^2", "Train RMSE", "Validation RMSE", ""].forEach((header) => appendCell(headRow, header, "th"));
+    ["Model", "Features", "Train R^2", "Validation R^2", "Train RMSE", "Validation RMSE", "Copy weights", "Clear"].forEach((header) => appendCell(headRow, header, "th"));
     thead.appendChild(headRow);
     table.appendChild(thead);
     const tbody = document.createElement("tbody");
@@ -1028,12 +1028,14 @@
         modelMetric(model, "trainRmse"),
         modelMetric(model, "validationRmse")
       ].forEach((value) => appendCell(row, value, "td"));
-      const actionCell = appendCell(row, "", "td");
+      const copyCell = appendCell(row, "", "td");
       const copyWeights = document.createElement("button");
       copyWeights.type = "button";
       copyWeights.className = "secondary compact-copy";
       copyWeights.textContent = "Copy weights";
       copyWeights.addEventListener("click", () => copyText(toTsv(["Term", "Value"], modelWeightRows(model))));
+      copyCell.appendChild(copyWeights);
+      const clearCell = appendCell(row, "", "td");
       const clearOne = document.createElement("button");
       clearOne.type = "button";
       clearOne.className = "secondary compact-copy";
@@ -1043,8 +1045,7 @@
         saveState();
         renderRegressionTrainer();
       });
-      actionCell.appendChild(copyWeights);
-      actionCell.appendChild(clearOne);
+      clearCell.appendChild(clearOne);
       tbody.appendChild(row);
     });
     table.appendChild(tbody);
