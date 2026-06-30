@@ -11,6 +11,7 @@
 
   const TOOLS = [
     { id: "notepad", title: "Notepad" },
+    { id: "calculator", title: "Calculator" },
     { id: "codon-alignment", title: "Codon Alignment" },
     { id: "dna-to-protein", title: "DNA to Protein" },
     { id: "orf-finder", title: "ORF Finder" },
@@ -433,6 +434,25 @@
       html`<section class="panel"><div class="buttons"><button type="button" data-action="clear-data">Clear data</button></div>${messageBlock()}</section>`,
       ""
     ),
+    "calculator": () => toolShell(
+      "Calculator",
+      html`<section class="panel">
+        <label>Input</label>
+        <textarea data-field="expression" spellcheck="false" style="min-height:90px;"></textarea>
+        ${standardButtons("Calculate")}
+        ${messageBlock()}
+        <h3>Output</h3>
+        <div data-role="output" class="output-block"></div>
+        <h3>Formulas</h3>
+        <p>Mean: x&#772; = &Sigma;x<sub>i</sub> / n</p>
+        <p>Variance: s<sup>2</sup> = &Sigma;(x<sub>i</sub> - x&#772;)<sup>2</sup> / (n - 1)</p>
+        <p>Nearest-neighbor index: R = r<sub>observed</sub> / r<sub>expected</sub>, where r<sub>expected</sub> = 1 / (2&radic;(N / A))</p>
+        <p>Accuracy: (TP + TN) / (TP + TN + FP + FN)</p>
+        <p>Sensitivity: TP / (TP + FN)</p>
+        <p>Specificity: TN / (TN + FP)</p>
+      </section>`,
+      ""
+    ),
     "codon-alignment": () => toolShell(
       "Codon Alignment",
       html`<section class="panel">
@@ -553,7 +573,8 @@
     showMessage(panel, "", "");
     setBusy(panel, true);
     try {
-      if (id === "codon-alignment") await runCodonAlignment(panel);
+      if (id === "calculator") runCalculator(panel);
+      else if (id === "codon-alignment") await runCodonAlignment(panel);
       else if (id === "dna-to-protein") await runDnaToProtein(panel);
       else if (id === "orf-finder") await runOrfFinder(panel);
       else if (id === "restriction-mapper") await runRestrictionMapper(panel);
@@ -569,6 +590,108 @@
       setBusy(panel, false);
       saveWorkspaceState();
     }
+  }
+
+  function evaluateCalculatorExpression(input) {
+    const source = String(input || "");
+    let index = 0;
+
+    function skipWhitespace() {
+      while (/\s/.test(source[index] || "")) index += 1;
+    }
+
+    function parseNumber() {
+      skipWhitespace();
+      const start = index;
+      while (/[0-9]/.test(source[index] || "")) index += 1;
+      if (source[index] === ".") {
+        index += 1;
+        while (/[0-9]/.test(source[index] || "")) index += 1;
+      }
+      if (source[index] === "e" || source[index] === "E") {
+        const exponentStart = index;
+        index += 1;
+        if (source[index] === "+" || source[index] === "-") index += 1;
+        const digitStart = index;
+        while (/[0-9]/.test(source[index] || "")) index += 1;
+        if (digitStart === index) index = exponentStart;
+      }
+      if (start === index || source.slice(start, index) === ".") throw new Error("Expected a number.");
+      return Number(source.slice(start, index));
+    }
+
+    function parseFactor() {
+      skipWhitespace();
+      const char = source[index];
+      if (char === "+") {
+        index += 1;
+        return parseFactor();
+      }
+      if (char === "-") {
+        index += 1;
+        return -parseFactor();
+      }
+      if (char === "(") {
+        index += 1;
+        const value = parseExpression();
+        skipWhitespace();
+        if (source[index] !== ")") throw new Error("Missing closing parenthesis.");
+        index += 1;
+        return value;
+      }
+      return parseNumber();
+    }
+
+    function parseTerm() {
+      let value = parseFactor();
+      while (true) {
+        skipWhitespace();
+        const operator = source[index];
+        if (operator !== "*" && operator !== "/") return value;
+        index += 1;
+        const right = parseFactor();
+        if (operator === "*") value *= right;
+        else {
+          if (right === 0) throw new Error("Division by zero.");
+          value /= right;
+        }
+      }
+    }
+
+    function parseExpression() {
+      let value = parseTerm();
+      while (true) {
+        skipWhitespace();
+        const operator = source[index];
+        if (operator !== "+" && operator !== "-") return value;
+        index += 1;
+        const right = parseTerm();
+        value = operator === "+" ? value + right : value - right;
+      }
+    }
+
+    skipWhitespace();
+    if (index >= source.length) throw new Error("Enter a calculation.");
+    const value = parseExpression();
+    skipWhitespace();
+    if (index < source.length) throw new Error("Unexpected character: " + source[index]);
+    if (!Number.isFinite(value)) throw new Error("Result is not finite.");
+    return value;
+  }
+
+  function formatCalculatorValue(value) {
+    if (Number.isInteger(value)) return String(value);
+    return Number(value.toPrecision(12)).toString();
+  }
+
+  function runCalculator(panel) {
+    const expression = value(panel, "expression");
+    role(panel, "output").textContent = "";
+    const result = evaluateCalculatorExpression(expression);
+    const formatted = formatCalculatorValue(result);
+    role(panel, "output").textContent = formatted;
+    state.latestText.set(state.activeTool, ["Calculator", expression.trim(), "= " + formatted].join("\n"));
+    showMessage(panel, "Calculated.", "ok");
   }
 
   async function runCodonAlignment(panel) {
