@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = "usabo.ml.workspace.v3";
   const DEFAULT_TOOL = "data-input";
+  const FIXED_SPLIT_SEED = 25565;
   const CLEAR_DATA_TOOL = "clear-data";
   const REQUIRED_COLUMNS = [
     "biomass_sum",
@@ -20,8 +21,6 @@
     "image_brightness",
     "camera_batch"
   ];
-  const POSITIVE_CLASS = "high-biomass";
-  const NEGATIVE_CLASS = "low-biomass";
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   const tools = new Set([
@@ -60,7 +59,6 @@
         scatterCorrelation: false,
         splitTarget: "",
         trainPercent: "",
-        splitSeed: "",
         selectedFeatures: [],
         classifierModelId: "",
         classifierSet: "",
@@ -372,11 +370,10 @@
     if (!requireDataset(root)) return;
 
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="settings three"><div><label for="ml-split-target">Target</label><select id="ml-split-target"></select></div><div><label for="ml-train-percent">Train %</label><input id="ml-train-percent" type="number" min="10" max="90" step="1"></div><div><label for="ml-split-seed">Random seed</label><input id="ml-split-seed" type="number" step="1"></div></div><h3>Input Features</h3><div class="feature-checklist" data-feature-list></div><div class="buttons"><button type="button" data-create-split>Create split</button></div><div class="message" data-split-message role="status" aria-live="polite"></div>';
+    controls.innerHTML = '<div class="settings two"><div><label for="ml-split-target">Target</label><select id="ml-split-target"></select></div><div><label for="ml-train-percent">Train %</label><input id="ml-train-percent" type="number" min="10" max="90" step="1"></div></div><h3>Input Features</h3><div class="feature-checklist" data-feature-list></div><div class="buttons"><button type="button" data-create-split>Create split</button></div><div class="message" data-split-message role="status" aria-live="polite"></div>';
     const targetSelect = controls.querySelector("#ml-split-target");
     fillSelect(targetSelect, [""].concat(dataset.numericColumns), state.ui.splitTarget, "Choose target");
     controls.querySelector("#ml-train-percent").value = state.ui.trainPercent;
-    controls.querySelector("#ml-split-seed").value = state.ui.splitSeed;
     renderFeatureChecklist(controls.querySelector("[data-feature-list]"));
     targetSelect.addEventListener("change", () => {
       state.ui.splitTarget = targetSelect.value;
@@ -384,18 +381,15 @@
       renderDatasetSplitter();
     });
     controls.querySelector("#ml-train-percent").addEventListener("change", (event) => { state.ui.trainPercent = event.target.value; });
-    controls.querySelector("#ml-split-seed").addEventListener("change", (event) => { state.ui.splitSeed = event.target.value; });
     controls.querySelectorAll("[data-feature]").forEach((box) => box.addEventListener("change", () => collectSelectedFeatures(controls)));
     controls.querySelector("[data-create-split]").addEventListener("click", () => {
       collectSelectedFeatures(controls);
       state.ui.splitTarget = targetSelect.value;
       state.ui.trainPercent = controls.querySelector("#ml-train-percent").value;
-      state.ui.splitSeed = controls.querySelector("#ml-split-seed").value;
       try {
         state.splitConfig = {
           target: state.ui.splitTarget,
           trainPercent: state.ui.trainPercent,
-          seed: state.ui.splitSeed,
           selectedFeatures: state.ui.selectedFeatures.slice()
         };
         split = createSplitFromConfig(state.splitConfig);
@@ -491,23 +485,10 @@
       addMessage(output, "Choose a model, dataset, and numeric threshold.", "error");
     } else {
       const evaluation = evaluateClassifier(model, evalSet, threshold);
-      addMetrics(output, [
-        ["Threshold", threshold],
-        ["Positive class", POSITIVE_CLASS],
-        ["Accuracy", formatPercent(evaluation.accuracy)],
-        ["Sensitivity", formatPercent(evaluation.sensitivity)],
-        ["Specificity", formatPercent(evaluation.specificity)]
-      ]);
-      addOutputBlock(output, "Definition", "true high-biomass: true " + model.target + " > " + threshold + "\npredicted high-biomass: predicted " + model.target + " > " + threshold + "\nThe model predicts biomass, not probability.");
       renderTable(output, "Confusion Matrix", ["", "Predicted high-biomass", "Predicted low-biomass"], [
         ["True high-biomass", evaluation.tp, evaluation.fn],
         ["True low-biomass", evaluation.fp, evaluation.tn]
       ]);
-      renderTable(output, "Threshold Comparison", ["Threshold", "Accuracy", "Sensitivity", "Specificity", "Predicted high-biomass"], thresholdComparisonValues(threshold).map((value) => {
-        const e = evaluateClassifier(model, evalSet, value);
-        return [value, formatPercent(e.accuracy), formatPercent(e.sensitivity), formatPercent(e.specificity), e.predictedHigh];
-      }));
-      renderTable(output, "Misclassified Samples", ["Row", "True biomass", "Predicted biomass", "True class", "Predicted class"], evaluation.misclassified.slice(0, 25).map((item) => [item.rowNumber, formatNumber(item.actual, 3), formatNumber(item.predicted, 3), item.actualClass, item.predictedClass]));
     }
 
     root.appendChild(controls);
@@ -669,11 +650,6 @@
     return dataset.columnNames.filter((column) => column !== "seedling_id" && uniqueColumnValues(column).length > 1 && uniqueColumnValues(column).length <= 30);
   }
 
-  function thresholdComparisonValues(threshold) {
-    const values = [threshold - 20, threshold, threshold + 20].filter((value) => Number.isFinite(value));
-    return Array.from(new Set(values)).sort((a, b) => a - b);
-  }
-
   function numericSummary(rows) {
     return dataset.numericColumns.map((column) => {
       const values = rows.map((row) => numberValue(row, column)).filter(Number.isFinite);
@@ -746,10 +722,9 @@
     if (!dataset.numericColumns.includes(target)) throw new Error("Target must be a numeric column.");
     const percent = Number(config.trainPercent);
     if (!Number.isFinite(percent) || percent < 10 || percent > 90) throw new Error("Enter a train percentage between 10 and 90.");
-    if (config.seed === "" || config.seed === null || config.seed === undefined || !Number.isFinite(Number(config.seed))) throw new Error("Enter a numeric random seed.");
     const features = (config.selectedFeatures || []).filter((feature) => feature !== target && possibleFeatures().includes(feature));
     if (!features.length) throw new Error("Select at least one input feature.");
-    const shuffled = shuffledIndices(dataset.rows.length, Number(config.seed));
+    const shuffled = shuffledIndices(dataset.rows.length, FIXED_SPLIT_SEED);
     const trainCount = clamp(Math.round(dataset.rows.length * percent / 100), 1, dataset.rows.length - 1);
     const trainRows = shuffled.slice(0, trainCount).map((index) => dataset.rows[index]);
     const validationRows = shuffled.slice(trainCount).map((index) => dataset.rows[index]);
@@ -763,7 +738,7 @@
       target,
       selectedFeatures: features,
       trainPercent: percent,
-      seed: Number(config.seed),
+      seed: FIXED_SPLIT_SEED,
       trainRows,
       validationRows,
       categories,
@@ -915,7 +890,6 @@
     ]);
     addOutputBlock(parent, "Intercept", formatNumber(model.intercept, 6));
     renderTable(parent, "Feature Weights", ["Feature", "Coefficient"], model.featureNames.map((name, index) => [name, formatNumber(model.coefficients[index], 6)]));
-    renderTable(parent, "Validation Predicted vs True", ["Row", "True biomass", "Predicted biomass", "Residual"], model.validationActual.map((actual, index) => [model.validationRowNumbers[index], formatNumber(actual, 4), formatNumber(model.validationPredictions[index], 4), formatNumber(actual - model.validationPredictions[index], 4)]));
   }
 
   function renderModelHistory(parent) {
@@ -943,43 +917,19 @@
   function evaluateClassifier(model, setName, threshold) {
     const actual = setName === "training" ? model.trainActual : model.validationActual;
     const predicted = setName === "training" ? model.trainPredictions : model.validationPredictions;
-    const rows = setName === "training" ? model.trainRowNumbers : model.validationRowNumbers;
     let tp = 0;
     let fp = 0;
     let tn = 0;
     let fn = 0;
-    let predictedHigh = 0;
-    const misclassified = [];
     actual.forEach((value, index) => {
       const trueHigh = value > threshold;
       const predHigh = predicted[index] > threshold;
-      if (predHigh) predictedHigh++;
       if (trueHigh && predHigh) tp++;
       else if (!trueHigh && predHigh) fp++;
       else if (!trueHigh && !predHigh) tn++;
       else fn++;
-      if (trueHigh !== predHigh) {
-        misclassified.push({
-          rowNumber: rows[index],
-          actual: value,
-          predicted: predicted[index],
-          actualClass: trueHigh ? POSITIVE_CLASS : NEGATIVE_CLASS,
-          predictedClass: predHigh ? POSITIVE_CLASS : NEGATIVE_CLASS
-        });
-      }
     });
-    const total = actual.length;
-    return {
-      tp,
-      fp,
-      tn,
-      fn,
-      predictedHigh,
-      misclassified,
-      accuracy: total ? (tp + tn) / total : NaN,
-      sensitivity: tp + fn ? tp / (tp + fn) : NaN,
-      specificity: tn + fp ? tn / (tn + fp) : NaN
-    };
+    return { tp, fp, tn, fn };
   }
 
   function previewHeaders(currentSplit) {
@@ -1270,10 +1220,6 @@
   function formatNumber(value, digits) {
     if (!Number.isFinite(Number(value))) return "NA";
     return Number(value).toFixed(digits === undefined ? 3 : digits);
-  }
-
-  function formatPercent(value) {
-    return Number.isFinite(Number(value)) ? (Number(value) * 100).toFixed(1) + "%" : "NA";
   }
 
   function compactNumber(value) {
