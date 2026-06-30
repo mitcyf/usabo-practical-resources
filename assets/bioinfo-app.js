@@ -620,6 +620,29 @@
       return Number(source.slice(start, index));
     }
 
+    function parseName() {
+      const start = index;
+      while (/[A-Za-z]/.test(source[index] || "")) index += 1;
+      return source.slice(start, index).toLowerCase();
+    }
+
+    function parseFunctionCall() {
+      const name = parseName();
+      skipWhitespace();
+      if (source[index] !== "(") throw new Error("Expected opening parenthesis after " + name + ".");
+      index += 1;
+      const argument = parseExpression();
+      skipWhitespace();
+      if (source[index] !== ")") throw new Error("Missing closing parenthesis.");
+      index += 1;
+
+      if (name === "sqrt") {
+        if (argument < 0) throw new Error("sqrt() cannot take a negative number.");
+        return Math.sqrt(argument);
+      }
+      throw new Error("Unknown function: " + name + ".");
+    }
+
     function parseFactor() {
       skipWhitespace();
       const char = source[index];
@@ -639,6 +662,7 @@
         index += 1;
         return value;
       }
+      if (/[A-Za-z]/.test(char || "")) return parseFunctionCall();
       return parseNumber();
     }
 
