@@ -112,6 +112,10 @@ h3 {
   margin-top: 24px;
 }
 
+.monospace {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .subtitle {
   max-width: 820px;
   color: var(--muted);
