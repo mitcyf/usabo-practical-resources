@@ -60,7 +60,6 @@
         selectedFeatures: [],
         regressionTrainTable: "",
         regressionValidationTable: "",
-        regressionModelText: "",
         classifierWeights: "",
         classifierThreshold: ""
       },
@@ -417,39 +416,21 @@
     const root = renderShell("Regression Trainer");
 
     const controls = document.createElement("div");
-    controls.innerHTML = '<label for="ml-regression-train-table">Training table</label><textarea id="ml-regression-train-table" spellcheck="false"></textarea><label for="ml-regression-validation-table">Validation table</label><textarea id="ml-regression-validation-table" spellcheck="false"></textarea><div class="buttons"><button type="button" data-train-model>Train regression model</button></div><label for="ml-regression-model-text">Model weights</label><textarea id="ml-regression-model-text" spellcheck="false"></textarea><div class="buttons"><button type="button" data-load-model>Load model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
+    controls.innerHTML = '<label for="ml-regression-train-table">Training table</label><textarea id="ml-regression-train-table" spellcheck="false"></textarea><label for="ml-regression-validation-table">Validation table</label><textarea id="ml-regression-validation-table" spellcheck="false"></textarea><div class="buttons"><button type="button" data-train-model>Train regression model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
     const trainBox = controls.querySelector("#ml-regression-train-table");
     const validationBox = controls.querySelector("#ml-regression-validation-table");
-    const modelBox = controls.querySelector("#ml-regression-model-text");
     trainBox.value = state.ui.regressionTrainTable || "";
     validationBox.value = state.ui.regressionValidationTable || "";
-    modelBox.value = state.ui.regressionModelText || "";
-    [trainBox, validationBox, modelBox].forEach((box) => box.addEventListener("change", () => {
+    [trainBox, validationBox].forEach((box) => box.addEventListener("change", () => {
       state.ui.regressionTrainTable = trainBox.value;
       state.ui.regressionValidationTable = validationBox.value;
-      state.ui.regressionModelText = modelBox.value;
       saveState();
     }));
     controls.querySelector("[data-train-model]").addEventListener("click", () => {
       state.ui.regressionTrainTable = trainBox.value;
       state.ui.regressionValidationTable = validationBox.value;
-      state.ui.regressionModelText = modelBox.value;
       try {
         const model = trainCurrentModel();
-        state.models.push(model);
-        saveState();
-        renderRegressionTrainer();
-      } catch (err) {
-        showMessage(controls.querySelector("[data-train-message]"), err.message || String(err), "error");
-      }
-    });
-    controls.querySelector("[data-load-model]").addEventListener("click", () => {
-      state.ui.regressionTrainTable = trainBox.value;
-      state.ui.regressionValidationTable = validationBox.value;
-      state.ui.regressionModelText = modelBox.value;
-      try {
-        const model = parseModelWeights(state.ui.regressionModelText);
-        model.id = nextModelId();
         state.models.push(model);
         saveState();
         renderRegressionTrainer();
@@ -1048,6 +1029,11 @@
         modelMetric(model, "validationRmse")
       ].forEach((value) => appendCell(row, value, "td"));
       const actionCell = appendCell(row, "", "td");
+      const copyWeights = document.createElement("button");
+      copyWeights.type = "button";
+      copyWeights.className = "secondary compact-copy";
+      copyWeights.textContent = "Copy weights";
+      copyWeights.addEventListener("click", () => copyText(toTsv(["Term", "Value"], modelWeightRows(model))));
       const clearOne = document.createElement("button");
       clearOne.type = "button";
       clearOne.className = "secondary compact-copy";
@@ -1057,6 +1043,7 @@
         saveState();
         renderRegressionTrainer();
       });
+      actionCell.appendChild(copyWeights);
       actionCell.appendChild(clearOne);
       tbody.appendChild(row);
     });
