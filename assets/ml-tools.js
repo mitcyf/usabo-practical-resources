@@ -662,7 +662,7 @@
   }
 
   function summaryCategoricalColumns() {
-    return dataset.categoricalColumns.filter((column) => column !== "seedling_id" && uniqueColumnValues(column).length <= 30);
+    return dataset.categoricalColumns.filter((column) => column !== "seedling_id" && column !== "SRG1_class" && uniqueColumnValues(column).length <= 30);
   }
 
   function colorByColumns() {
