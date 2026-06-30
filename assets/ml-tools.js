@@ -178,7 +178,7 @@
   function renderDataInput() {
     const root = renderShell("Data Input");
     const controls = document.createElement("div");
-    controls.innerHTML = '<label for="ml-csv-input">CSV dataset</label><div class="file-drop-zone" data-csv-drop-zone tabindex="0"><strong>Drop CSV file here</strong><span>or click to choose a file</span><input data-csv-file-input type="file" accept=".csv,text/csv,text/plain"></div><textarea id="ml-csv-input" spellcheck="false"></textarea><div class="buttons"><button type="button" data-load-dataset>Load dataset</button></div><div class="message" data-input-message role="status" aria-live="polite"></div>';
+    controls.innerHTML = '<label for="ml-csv-input">CSV dataset</label><div class="file-drop-zone" data-csv-drop-zone tabindex="0"><strong>Drop CSV file here</strong><span>or click to choose a file</span><input data-csv-file-input type="file" accept=".csv,text/csv,text/plain"></div><textarea id="ml-csv-input" spellcheck="false"></textarea><div class="message" data-input-message role="status" aria-live="polite"></div>';
     const textarea = controls.querySelector("textarea");
     textarea.value = state.csvText || "";
     const message = controls.querySelector("[data-input-message]");
@@ -201,7 +201,11 @@
       reader.onerror = () => showMessage(message, "Could not read that file.", "error");
       reader.readAsText(file);
     }
-    controls.querySelector("[data-load-dataset]").addEventListener("click", () => loadCsvText(textarea.value));
+    let inputTimer = 0;
+    textarea.addEventListener("input", () => {
+      window.clearTimeout(inputTimer);
+      inputTimer = window.setTimeout(() => loadCsvText(textarea.value), 350);
+    });
     dropZone.addEventListener("click", () => fileInput.click());
     dropZone.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
