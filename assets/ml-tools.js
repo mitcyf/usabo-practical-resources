@@ -54,9 +54,7 @@
         filterMax: "",
         scatterX: "",
         scatterY: "",
-        scatterColor: "none",
         scatterTrend: false,
-        scatterCorrelation: false,
         splitTarget: "",
         trainPercent: "",
         selectedFeatures: [],
@@ -124,7 +122,6 @@
     if (state.ui.scatterX && !numeric.includes(state.ui.scatterX)) state.ui.scatterX = "";
     if (state.ui.splitTarget && !numeric.includes(state.ui.splitTarget)) state.ui.splitTarget = "";
     if (state.ui.filterColumn && !dataset.columnNames.includes(state.ui.filterColumn)) state.ui.filterColumn = "";
-    if (state.ui.scatterColor && state.ui.scatterColor !== "none" && !colorByColumns().includes(state.ui.scatterColor)) state.ui.scatterColor = "none";
     const possible = possibleFeatures();
     if (!Array.isArray(state.ui.selectedFeatures)) state.ui.selectedFeatures = [];
     state.ui.selectedFeatures = state.ui.selectedFeatures.filter((feature) => possible.includes(feature));
@@ -314,19 +311,15 @@
     if (!requireDataset(root)) return;
 
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="settings three"><div><label for="ml-scatter-x">X-axis</label><select id="ml-scatter-x"></select></div><div><label for="ml-scatter-y">Y-axis</label><select id="ml-scatter-y"></select></div><div><label for="ml-scatter-color">Color by</label><select id="ml-scatter-color"></select></div></div><div class="ml-check-row"><label><input id="ml-scatter-trend" type="checkbox"> Show trend line</label><label><input id="ml-scatter-correlation" type="checkbox"> Show correlation</label></div>';
+    controls.innerHTML = '<div class="settings two"><div><label for="ml-scatter-x">X-axis</label><select id="ml-scatter-x"></select></div><div><label for="ml-scatter-y">Y-axis</label><select id="ml-scatter-y"></select></div></div><div class="ml-check-row"><label><input id="ml-scatter-trend" type="checkbox"> Show trend line</label></div>';
     fillSelect(controls.querySelector("#ml-scatter-x"), [""].concat(dataset.numericColumns), state.ui.scatterX, "Choose column");
     fillSelect(controls.querySelector("#ml-scatter-y"), [""].concat(dataset.numericColumns), state.ui.scatterY, "Choose column");
-    fillSelect(controls.querySelector("#ml-scatter-color"), ["none"].concat(colorByColumns()), state.ui.scatterColor || "none");
     controls.querySelector("#ml-scatter-trend").checked = !!state.ui.scatterTrend;
-    controls.querySelector("#ml-scatter-correlation").checked = !!state.ui.scatterCorrelation;
     controls.querySelectorAll("select,input").forEach((control) => {
       control.addEventListener("change", () => {
         state.ui.scatterX = controls.querySelector("#ml-scatter-x").value;
         state.ui.scatterY = controls.querySelector("#ml-scatter-y").value;
-        state.ui.scatterColor = controls.querySelector("#ml-scatter-color").value;
         state.ui.scatterTrend = controls.querySelector("#ml-scatter-trend").checked;
-        state.ui.scatterCorrelation = controls.querySelector("#ml-scatter-correlation").checked;
         renderScatterplot();
       });
     });
@@ -341,29 +334,24 @@
       const xs = points.map((point) => point.x);
       const ys = points.map((point) => point.y);
       const r = pearson(xs, ys);
-      const relationship = relationshipText(r);
       addMetrics(output, [
         ["X-axis", x],
         ["Y-axis", y],
-        ["Pearson r", formatNumber(r, 4)],
-        ["Relationship", relationship]
+        ["Pearson r", formatNumber(r, 4)]
       ]);
       const plot = document.createElement("div");
       plot.className = "ml-plot-wrap";
-      plot.appendChild(makeScatterSvg(points, x, y, state.ui.scatterColor, !!state.ui.scatterTrend));
+      plot.appendChild(makeScatterSvg(points, x, y, !!state.ui.scatterTrend));
       output.appendChild(plot);
       if (state.ui.scatterTrend) {
         const fit = simpleLinearFit(xs, ys);
         addOutputBlock(output, "Simple Trend", "R^2 = " + formatNumber(fit.r2, 4) + "\nSlope = " + formatNumber(fit.slope, 4) + "\nIntercept = " + formatNumber(fit.intercept, 4));
-      } else if (state.ui.scatterCorrelation) {
-        addOutputBlock(output, "Correlation", "r = " + formatNumber(r, 4) + "\n" + relationship);
       }
     }
 
     root.appendChild(controls);
     root.appendChild(output);
   }
-
 
   function renderDatasetSplitter() {
     const root = renderShell("Dataset Splitter");
@@ -526,7 +514,6 @@
   }
 
 
-
   function parseCsv(text) {
     const rows = [];
     let row = [];
@@ -607,9 +594,6 @@
   }
 
 
-
-
-
   function filteredRows() {
     let rows = dataset.rows.slice();
     const column = dataset.columnNames.includes(state.ui.filterColumn) ? state.ui.filterColumn : "";
@@ -647,9 +631,6 @@
     return dataset.categoricalColumns.filter((column) => column !== "seedling_id" && column !== "SRG1_class" && uniqueColumnValues(column).length <= 30);
   }
 
-  function colorByColumns() {
-    return dataset.columnNames.filter((column) => column !== "seedling_id" && uniqueColumnValues(column).length > 1 && uniqueColumnValues(column).length <= 30);
-  }
 
   function numericSummary(rows) {
     return dataset.numericColumns.map((column) => {
@@ -667,8 +648,6 @@
       return column !== "seedling_id" && uniqueColumnValues(column).length > 1 && uniqueColumnValues(column).length <= 30;
     });
   }
-
-
 
 
   function renderFeatureChecklist(parent) {
@@ -706,7 +685,6 @@
   function collectSelectedFeatures(scope) {
     state.ui.selectedFeatures = Array.from(scope.querySelectorAll("[data-feature]:checked")).map((input) => input.dataset.feature);
   }
-
 
 
   function splitWarnings(features) {
@@ -1037,7 +1015,6 @@
   }
 
 
-
   function evaluateClassifierRows(rows, threshold) {
     let tp = 0;
     let fp = 0;
@@ -1062,10 +1039,10 @@
     return rows.map((row) => [row.__rowNumber, row[currentSplit.target]].concat(currentSplit.selectedFeatures.map((feature) => row[feature])));
   }
 
-  function makeScatterSvg(points, xColumn, yColumn, colorBy, showTrend) {
+  function makeScatterSvg(points, xColumn, yColumn, showTrend) {
     const width = 980;
     const height = 520;
-    const margin = { top: 28, right: 160, bottom: 72, left: 78 };
+    const margin = { top: 28, right: 42, bottom: 72, left: 78 };
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
     svg.setAttribute("class", "ml-plot");
@@ -1093,17 +1070,13 @@
       addSvgText(svg, margin.left - 10, yPos + 4, compactNumber(yValue), "ml-tick", "end");
     }
 
-    const palette = ["#1769aa", "#0f766e", "#b45309", "#6f42c1", "#9b1c1c", "#475569"];
-    const groups = Array.from(new Set(points.map((point) => colorBy === "none" ? "all" : String(point.row[colorBy])))).sort();
-    const colorFor = (group) => palette[Math.max(0, groups.indexOf(group)) % palette.length];
     points.forEach((point) => {
-      const group = colorBy === "none" ? "all" : String(point.row[colorBy]);
       const circle = document.createElementNS(SVG_NS, "circle");
       circle.setAttribute("cx", xScale(point.x));
       circle.setAttribute("cy", yScale(point.y));
       circle.setAttribute("r", 4.2);
       circle.setAttribute("class", "ml-point");
-      circle.setAttribute("fill", colorFor(group));
+      circle.setAttribute("fill", "#1769aa");
       svg.appendChild(circle);
     });
     if (showTrend && points.length > 1) {
@@ -1111,20 +1084,6 @@
       const y1 = fit.intercept + fit.slope * xDomain[0];
       const y2 = fit.intercept + fit.slope * xDomain[1];
       addSvgLine(svg, xScale(xDomain[0]), yScale(y1), xScale(xDomain[1]), yScale(y2), "ml-trend-line");
-    }
-    if (colorBy !== "none") {
-      addSvgText(svg, width - margin.right + 26, margin.top + 10, colorBy, "ml-axis-label", "start");
-      groups.slice(0, 10).forEach((group, index) => {
-        const y = margin.top + 34 + index * 22;
-        const rect = document.createElementNS(SVG_NS, "rect");
-        rect.setAttribute("x", width - margin.right + 26);
-        rect.setAttribute("y", y - 10);
-        rect.setAttribute("width", 12);
-        rect.setAttribute("height", 12);
-        rect.setAttribute("fill", colorFor(group));
-        svg.appendChild(rect);
-        addSvgText(svg, width - margin.right + 44, y, group, "ml-tick", "start");
-      });
     }
     return svg;
   }
@@ -1325,10 +1284,6 @@
     return actual.length ? Math.sqrt(actual.reduce((sum, value, index) => sum + Math.pow(value - predicted[index], 2), 0) / actual.length) : NaN;
   }
 
-  function relationshipText(r) {
-    if (!Number.isFinite(r) || Math.abs(r) < 0.25) return "weak/no clear relationship";
-    return r > 0 ? "positive relationship" : "negative relationship";
-  }
 
   function paddedDomain(values) {
     const lo = min(values);
@@ -1364,7 +1319,6 @@
       return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
     };
   }
-
 
 
   buttons.forEach((button) => {
