@@ -876,3 +876,95 @@ th {
 .blank-workspace {
   min-height: 560px;
 }
+
+
+.feature-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.feature-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 10px;
+  font-weight: 700;
+}
+
+.feature-option input,
+.ml-check-row input {
+  width: auto;
+  margin-top: 4px;
+}
+
+.ml-check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.ml-check-row label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+}
+
+.ml-plot-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 10px;
+  margin-top: 14px;
+}
+
+.ml-plot {
+  display: block;
+  min-width: 720px;
+  width: 100%;
+  height: auto;
+  background: #fff;
+}
+
+.ml-axis {
+  stroke: #486581;
+  stroke-width: 1.4;
+}
+
+.ml-axis-label {
+  fill: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ml-tick {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ml-point {
+  opacity: 0.78;
+  stroke: white;
+  stroke-width: 1;
+}
+
+.ml-trend-line {
+  stroke: #9b1c1c;
+  stroke-width: 3;
+}
+
+.compact-copy {
+  min-height: 34px;
+  padding: 6px 10px;
+  margin: 0 0 2px;
+  font-size: 0.86rem;
+}
