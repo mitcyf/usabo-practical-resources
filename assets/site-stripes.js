@@ -2,8 +2,8 @@
   "use strict";
 
   const CYCLE_MS = 10 * 60 * 1000;
-  const SATURATION = 62;
-  const LIGHTNESS = 78;
+  const SATURATION = 68;
+  const LIGHTNESS = 72;
 
   function positiveModulo(value, divisor) {
     return ((value % divisor) + divisor) % divisor;

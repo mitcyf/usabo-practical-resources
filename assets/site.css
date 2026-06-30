@@ -15,7 +15,8 @@
   --danger-soft: #fff1f1;
   --ok: #0f766e;
   --ok-soft: #ecfdf5;
-  --proctor-stripe: hsl(210, 62%, 78%);
+  --proctor-stripe: hsl(210, 68%, 72%);
+  --proctor-stripe-width: max(8px, calc((100vw - 1120px) / 4));
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
   background: var(--bg);
@@ -28,7 +29,14 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, var(--bg) 58%, #eef7f6 100%);
+  background:
+    linear-gradient(
+      90deg,
+      var(--proctor-stripe) 0 var(--proctor-stripe-width),
+      transparent var(--proctor-stripe-width) calc(100% - var(--proctor-stripe-width)),
+      var(--proctor-stripe) calc(100% - var(--proctor-stripe-width)) 100%
+    ),
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 58%, #eef7f6 100%);
 }
 
 body::before,
@@ -37,10 +45,10 @@ body::after {
   position: fixed;
   top: 0;
   bottom: 0;
-  width: max(16px, calc((100vw - 1120px) / 2));
-  background: var(--proctor-stripe, hsl(210, 62%, 78%));
+  width: var(--proctor-stripe-width);
+  background: var(--proctor-stripe, hsl(210, 68%, 72%));
   pointer-events: none;
-  z-index: 0;
+  z-index: 2147483647;
 }
 
 body::before {
@@ -623,9 +631,13 @@ th {
 }
 
 @media (max-width: 800px) {
+  :root {
+    --proctor-stripe-width: 5px;
+  }
+
   body::before,
   body::after {
-    width: max(10px, calc((100vw - 1120px) / 2));
+    width: var(--proctor-stripe-width);
   }
 
   .site-shell {
