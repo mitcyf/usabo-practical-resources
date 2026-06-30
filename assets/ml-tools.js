@@ -303,7 +303,6 @@
       renderTable(output, column + " Counts", [column, "Count"], Object.keys(counts).sort().map((key) => [key, counts[key]]));
     });
     renderTable(output, "Numeric Summary", ["Column", "Mean", "Std. dev.", "Min", "Max"], numericSummary(filtered));
-    renderTable(output, "Filtered Preview", dataset.columnNames, filtered.slice(0, 10).map((row) => dataset.columnNames.map((column) => row[column])));
 
     root.appendChild(controls);
     root.appendChild(output);
