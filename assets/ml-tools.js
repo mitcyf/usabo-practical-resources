@@ -60,8 +60,9 @@
         splitTarget: "",
         trainPercent: "",
         selectedFeatures: [],
-        classifierModelId: "",
-        classifierSet: "",
+        regressionTrainTable: "",
+        regressionValidationTable: "",
+        classifierValues: "",
         classifierThreshold: ""
       },
       splitConfig: null,
@@ -189,7 +190,6 @@
     function loadCsvText(text) {
       state.csvText = text;
       state.splitConfig = null;
-      state.models = [];
       rebuildFromCsv();
       saveState();
       renderDataInput();
@@ -393,7 +393,6 @@
           selectedFeatures: state.ui.selectedFeatures.slice()
         };
         split = createSplitFromConfig(state.splitConfig);
-        state.models = [];
         addMessage(controls.querySelector("[data-split-message]"), "Split created.", "ok");
         saveState();
         renderDatasetSplitter();
@@ -416,8 +415,8 @@
       ]);
       addOutputBlock(output, "Included Features", split.selectedFeatures.join(", "));
       addOutputBlock(output, "Encoded Columns", split.featureNames.join(", "));
-      renderTable(output, "Training Preview", previewHeaders(split), previewRows(split.trainRows.slice(0, 6), split));
-      renderTable(output, "Validation Preview", previewHeaders(split), previewRows(split.validationRows.slice(0, 6), split));
+      renderTable(output, "Training Data", previewHeaders(split), previewRows(split.trainRows, split));
+      renderTable(output, "Validation Data", previewHeaders(split), previewRows(split.validationRows, split));
     }
 
     root.appendChild(controls);
@@ -427,12 +426,21 @@
 
   function renderRegressionTrainer() {
     const root = renderShell("Regression Trainer");
-    if (!requireDataset(root)) return;
-    if (!requireSplit(root)) return;
 
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="buttons"><button type="button" data-train-model>Train regression model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
+    controls.innerHTML = '<label for="ml-regression-train-table">Training table</label><textarea id="ml-regression-train-table" spellcheck="false"></textarea><label for="ml-regression-validation-table">Validation table</label><textarea id="ml-regression-validation-table" spellcheck="false"></textarea><div class="buttons"><button type="button" data-train-model>Train regression model</button></div><div class="message" data-train-message role="status" aria-live="polite"></div>';
+    const trainBox = controls.querySelector("#ml-regression-train-table");
+    const validationBox = controls.querySelector("#ml-regression-validation-table");
+    trainBox.value = state.ui.regressionTrainTable || "";
+    validationBox.value = state.ui.regressionValidationTable || "";
+    [trainBox, validationBox].forEach((box) => box.addEventListener("change", () => {
+      state.ui.regressionTrainTable = trainBox.value;
+      state.ui.regressionValidationTable = validationBox.value;
+      saveState();
+    }));
     controls.querySelector("[data-train-model]").addEventListener("click", () => {
+      state.ui.regressionTrainTable = trainBox.value;
+      state.ui.regressionValidationTable = validationBox.value;
       try {
         const model = trainCurrentModel();
         state.models.push(model);
@@ -452,49 +460,46 @@
     root.appendChild(output);
   }
 
-
-
   function renderClassifierEvaluator() {
     const root = renderShell("Classifier Evaluator");
-    if (!requireDataset(root)) return;
-    if (!requireSplit(root)) return;
-    if (!state.models.length) {
-      addMessage(root, "Train at least one regression model first.", "error");
-      return;
-    }
 
-    if (state.ui.classifierModelId && !findModel(state.ui.classifierModelId)) state.ui.classifierModelId = "";
     const controls = document.createElement("div");
-    controls.innerHTML = '<div class="settings three"><div><label for="ml-classifier-model">Model</label><select id="ml-classifier-model"></select></div><div><label for="ml-classifier-set">Dataset</label><select id="ml-classifier-set"><option value="">Choose dataset</option><option value="validation">Validation</option><option value="training">Training</option></select></div><div><label for="ml-classifier-threshold">Threshold</label><input id="ml-classifier-threshold" type="number" step="any"></div></div>';
-    const modelSelect = controls.querySelector("#ml-classifier-model");
-    fillSelect(modelSelect, [""].concat(state.models.map((model) => model.id)), state.ui.classifierModelId, "Choose model");
-    controls.querySelector("#ml-classifier-set").value = state.ui.classifierSet;
-    controls.querySelector("#ml-classifier-threshold").value = state.ui.classifierThreshold;
-    controls.querySelectorAll("select,input").forEach((control) => control.addEventListener("change", () => {
-      state.ui.classifierModelId = modelSelect.value;
-      state.ui.classifierSet = controls.querySelector("#ml-classifier-set").value;
-      state.ui.classifierThreshold = controls.querySelector("#ml-classifier-threshold").value;
-      renderClassifierEvaluator();
+    controls.innerHTML = '<label for="ml-classifier-values">True and predicted values</label><textarea id="ml-classifier-values" spellcheck="false"></textarea><div class="settings two"><div><label for="ml-classifier-threshold">Threshold</label><input id="ml-classifier-threshold" type="number" step="any"></div></div><div class="buttons"><button type="button" data-evaluate-classifier>Evaluate classifier</button></div><div class="message" data-classifier-message role="status" aria-live="polite"></div>';
+    const valuesBox = controls.querySelector("#ml-classifier-values");
+    const thresholdBox = controls.querySelector("#ml-classifier-threshold");
+    valuesBox.value = state.ui.classifierValues || "";
+    thresholdBox.value = state.ui.classifierThreshold || "";
+    [valuesBox, thresholdBox].forEach((control) => control.addEventListener("change", () => {
+      state.ui.classifierValues = valuesBox.value;
+      state.ui.classifierThreshold = thresholdBox.value;
+      saveState();
     }));
+    controls.querySelector("[data-evaluate-classifier]").addEventListener("click", () => {
+      state.ui.classifierValues = valuesBox.value;
+      state.ui.classifierThreshold = thresholdBox.value;
+      saveState();
+      renderClassifierEvaluator();
+    });
 
     const output = document.createElement("div");
-    const model = findModel(state.ui.classifierModelId);
-    const evalSet = state.ui.classifierSet;
     const threshold = Number(state.ui.classifierThreshold);
-    if (!model || !evalSet || state.ui.classifierThreshold === "" || !Number.isFinite(threshold)) {
-      addMessage(output, "Choose a model, dataset, and numeric threshold.", "error");
+    if (!state.ui.classifierValues.trim() || state.ui.classifierThreshold === "" || !Number.isFinite(threshold)) {
+      addMessage(output, "Paste values and enter a numeric threshold.", "error");
     } else {
-      const evaluation = evaluateClassifier(model, evalSet, threshold);
-      renderTable(output, "Confusion Matrix", ["", "Predicted high-biomass", "Predicted low-biomass"], [
-        ["True high-biomass", evaluation.tp, evaluation.fn],
-        ["True low-biomass", evaluation.fp, evaluation.tn]
-      ]);
+      try {
+        const evaluation = evaluateClassifierRows(parseClassifierValues(state.ui.classifierValues), threshold);
+        renderTable(output, "Confusion Matrix", ["", "Predicted high-biomass", "Predicted low-biomass"], [
+          ["True high-biomass", evaluation.tp, evaluation.fn],
+          ["True low-biomass", evaluation.fp, evaluation.tn]
+        ]);
+      } catch (err) {
+        addMessage(output, err.message || String(err), "error");
+      }
     }
 
     root.appendChild(controls);
     root.appendChild(output);
   }
-
 
   function renderClearData() {
     const root = renderShell("Clear Data");
@@ -520,11 +525,7 @@
     return false;
   }
 
-  function requireSplit(parent) {
-    if (split) return true;
-    addMessage(parent, "Create a training/validation split first.", "error");
-    return false;
-  }
+
 
   function parseCsv(text) {
     const rows = [];
@@ -792,40 +793,122 @@
   }
 
   function trainCurrentModel() {
-    if (!split) throw new Error("Create a split first.");
-    const trainX = split.trainX.map((row) => row.slice());
-    const validationX = split.validationX.map((row) => row.slice());
-    const featureNames = split.featureNames.slice();
-    const fitted = fitLinearRegression(trainX, split.trainY);
+    const input = buildRegressionInput(state.ui.regressionTrainTable, state.ui.regressionValidationTable);
+    const trainX = input.trainX.map((row) => row.slice());
+    const validationX = input.validationX.map((row) => row.slice());
+    const featureNames = input.featureNames.slice();
+    const fitted = fitLinearRegression(trainX, input.trainY);
     const trainPred = predictRows(trainX, fitted);
     const validationPred = predictRows(validationX, fitted);
-    const id = "Model " + (state.models.length + 1);
+    const id = nextModelId();
     return {
       id,
-      target: split.target,
-      selectedFeatures: split.selectedFeatures.slice(),
+      target: input.target,
+      selectedFeatures: input.selectedFeatures.slice(),
       featureNames,
       intercept: fitted.intercept,
       coefficients: fitted.coefficients,
       ridge: fitted.ridge,
       trainPredictions: trainPred,
       validationPredictions: validationPred,
-      trainActual: split.trainY.slice(),
-      validationActual: split.validationY.slice(),
-      trainRowNumbers: split.trainRows.map((row) => row.__rowNumber),
-      validationRowNumbers: split.validationRows.map((row) => row.__rowNumber),
+      trainActual: input.trainY.slice(),
+      validationActual: input.validationY.slice(),
+      trainRowNumbers: input.trainRows.map((row) => row.__rowNumber),
+      validationRowNumbers: input.validationRows.map((row) => row.__rowNumber),
       metrics: {
-        trainR2: rSquared(split.trainY, trainPred),
-        validationR2: rSquared(split.validationY, validationPred),
-        trainRmse: rmse(split.trainY, trainPred),
-        validationRmse: rmse(split.validationY, validationPred)
+        trainR2: rSquared(input.trainY, trainPred),
+        validationR2: rSquared(input.validationY, validationPred),
+        trainRmse: rmse(input.trainY, trainPred),
+        validationRmse: rmse(input.validationY, validationPred)
       }
     };
   }
 
+  function nextModelId() {
+    const maxId = state.models.reduce((max, model) => {
+      const match = /^Model (\d+)$/.exec(model.id || "");
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+    return "Model " + (maxId + 1);
+  }
 
+  function buildRegressionInput(trainText, validationText) {
+    const train = parsePastedTable(trainText, "Training table");
+    const validation = parsePastedTable(validationText, "Validation table");
+    if (train.headers.length !== validation.headers.length || train.headers.some((header, index) => header !== validation.headers[index])) {
+      throw new Error("Training and validation tables must have the same headers.");
+    }
+    const rowColumn = rowNumberColumn(train.headers);
+    const targetIndex = rowColumn ? 1 : 0;
+    const target = train.headers[targetIndex];
+    const selectedFeatures = train.headers.slice(targetIndex + 1);
+    if (!target || selectedFeatures.length === 0) throw new Error("Tables must include a target column and at least one input feature.");
+    const allRows = train.rows.concat(validation.rows);
+    allRows.forEach((row) => {
+      if (!isFiniteNumberString(row[target])) throw new Error("Target column contains a non-numeric value.");
+    });
+    selectedFeatures.forEach((feature) => {
+      if (allRows.some((row) => row[feature] === "")) throw new Error("Input feature " + feature + " contains a blank value.");
+    });
+    const categories = {};
+    selectedFeatures.forEach((feature) => {
+      if (!allRows.every((row) => isFiniteNumberString(row[feature]))) {
+        categories[feature] = Array.from(new Set(allRows.map((row) => row[feature]))).sort();
+      }
+    });
+    const trainEncoded = encodeRows(train.rows, selectedFeatures, categories);
+    const validationEncoded = encodeRows(validation.rows, selectedFeatures, categories);
+    return {
+      target,
+      selectedFeatures,
+      trainRows: train.rows,
+      validationRows: validation.rows,
+      featureNames: trainEncoded.featureNames,
+      trainX: trainEncoded.matrix,
+      validationX: validationEncoded.matrix,
+      trainY: train.rows.map((row) => numberValue(row, target)),
+      validationY: validation.rows.map((row) => numberValue(row, target))
+    };
+  }
 
+  function parseClassifierValues(text) {
+    const table = parsePastedTable(text, "Classifier values");
+    const rowColumn = rowNumberColumn(table.headers);
+    const headers = table.headers.filter((header) => header !== rowColumn);
+    const numericHeaders = headers.filter((header) => table.rows.every((row) => isFiniteNumberString(row[header])));
+    const actual = numericHeaders.find((header) => /true|actual/i.test(header)) || numericHeaders[0];
+    const predicted = numericHeaders.find((header) => header !== actual && /pred/i.test(header)) || numericHeaders.find((header) => header !== actual);
+    if (!actual || !predicted) throw new Error("Paste a table with true and predicted numeric columns.");
+    return table.rows.map((row) => ({ actual: numberValue(row, actual), predicted: numberValue(row, predicted) }));
+  }
 
+  function parsePastedTable(text, label) {
+    const raw = String(text || "").trim();
+    if (!raw) throw new Error(label + " is empty.");
+    const rows = raw.indexOf("\t") !== -1 ? raw.split(/\r?\n/).map((line) => line.split("\t")) : parseCsv(raw);
+    if (rows.length < 2) throw new Error(label + " must include headers and at least one data row.");
+    const headers = rows[0].map((header) => String(header).trim());
+    if (headers.some((header) => !header)) throw new Error(label + " contains a blank header.");
+    const duplicate = headers.find((header, index) => headers.indexOf(header) !== index);
+    if (duplicate) throw new Error(label + " has a duplicate header: " + duplicate);
+    const rowColumn = rowNumberColumn(headers);
+    const dataRows = rows.slice(1).map((cells, rowIndex) => {
+      if (cells.length > headers.length) throw new Error(label + " row " + (rowIndex + 2) + " has too many cells.");
+      const row = {};
+      headers.forEach((header, columnIndex) => {
+        row[header] = cells[columnIndex] === undefined ? "" : String(cells[columnIndex]).trim();
+      });
+      row.__rowNumber = rowColumn && isFiniteNumberString(row[rowColumn]) ? Number(row[rowColumn]) : rowIndex + 2;
+      return row;
+    });
+    return { headers, rows: dataRows };
+  }
+
+  function rowNumberColumn(headers) {
+    if (!headers.length) return "";
+    const first = String(headers[0]).trim().toLowerCase();
+    return first === "csv row" || first === "row" || first === "row number" ? headers[0] : "";
+  }
 
   function fitLinearRegression(matrix, y) {
     if (!matrix.length) throw new Error("No training rows are available.");
@@ -894,36 +977,75 @@
 
   function renderModelHistory(parent) {
     if (!state.models.length) return;
-    renderTable(parent, "Model History", ["Model", "Features", "Train R^2", "Validation R^2", "Train RMSE", "Validation RMSE"], state.models.map((model) => [
-      model.id,
-      model.selectedFeatures.join(", "),
-      formatNumber(model.metrics.trainR2, 4),
-      formatNumber(model.metrics.validationR2, 4),
-      formatNumber(model.metrics.trainRmse, 4),
-      formatNumber(model.metrics.validationRmse, 4)
-    ]));
+    const actions = document.createElement("div");
+    actions.className = "buttons";
+    const clearAll = document.createElement("button");
+    clearAll.type = "button";
+    clearAll.className = "secondary";
+    clearAll.textContent = "Clear model history";
+    clearAll.addEventListener("click", () => {
+      if (!window.confirm("Clear all saved regression models?")) return;
+      state.models = [];
+      saveState();
+      renderRegressionTrainer();
+    });
+    actions.appendChild(clearAll);
+    parent.appendChild(actions);
+
+    const h3 = document.createElement("h3");
+    h3.textContent = "Model History";
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    ["Model", "Features", "Train R^2", "Validation R^2", "Train RMSE", "Validation RMSE", ""].forEach((header) => appendCell(headRow, header, "th"));
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    state.models.forEach((model) => {
+      const row = document.createElement("tr");
+      [
+        model.id,
+        model.selectedFeatures.join(", "),
+        formatNumber(model.metrics.trainR2, 4),
+        formatNumber(model.metrics.validationR2, 4),
+        formatNumber(model.metrics.trainRmse, 4),
+        formatNumber(model.metrics.validationRmse, 4)
+      ].forEach((value) => appendCell(row, value, "td"));
+      const actionCell = appendCell(row, "", "td");
+      const clearOne = document.createElement("button");
+      clearOne.type = "button";
+      clearOne.className = "secondary compact-copy";
+      clearOne.textContent = "Clear";
+      clearOne.addEventListener("click", () => {
+        state.models = state.models.filter((candidate) => candidate.id !== model.id);
+        saveState();
+        renderRegressionTrainer();
+      });
+      actionCell.appendChild(clearOne);
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    parent.appendChild(h3);
+    parent.appendChild(wrap);
   }
-
-
 
   function latestModel() {
     return state.models[state.models.length - 1];
   }
 
-  function findModel(id) {
-    return state.models.find((model) => model.id === id) || null;
-  }
 
-  function evaluateClassifier(model, setName, threshold) {
-    const actual = setName === "training" ? model.trainActual : model.validationActual;
-    const predicted = setName === "training" ? model.trainPredictions : model.validationPredictions;
+
+  function evaluateClassifierRows(rows, threshold) {
     let tp = 0;
     let fp = 0;
     let tn = 0;
     let fn = 0;
-    actual.forEach((value, index) => {
-      const trueHigh = value > threshold;
-      const predHigh = predicted[index] > threshold;
+    rows.forEach((row) => {
+      const trueHigh = row.actual > threshold;
+      const predHigh = row.predicted > threshold;
       if (trueHigh && predHigh) tp++;
       else if (!trueHigh && predHigh) fp++;
       else if (!trueHigh && !predHigh) tn++;
