@@ -1087,7 +1087,7 @@
     TOOLS.forEach((tool) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = tool.id === CLEAR_DATA_TOOL ? "tool-tab danger" : "tool-tab";
+      button.className = "tool-tab";
       button.dataset.toolLink = tool.id;
       const title = document.createElement("span");
       title.textContent = tool.title;
